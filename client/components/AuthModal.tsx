@@ -130,16 +130,12 @@ export const AuthModal: React.FC = () => {
     setIsLoading(true);
     setErrorMsg('');
 
-    // Trigger one-click Google OAuth / Demo session
-    const res = await loginWithGoogle(undefined, {
-      name: email ? email.split('@')[0] : 'Homely Google Shopper',
-      email: email && email.includes('@') ? email : `user.${Date.now()}@gmail.com`,
-      avatarUrl: 'https://lh3.googleusercontent.com/a/default-user'
-    });
+    // Trigger official Firebase Google Sign-In popup
+    const res = await loginWithGoogle();
 
     setIsLoading(false);
-    if (!res.success) {
-      setErrorMsg(res.error || 'Google Sign-In was unable to complete.');
+    if (!res.success && res.error) {
+      setErrorMsg(res.error);
     }
   };
 

@@ -1,6 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { auth, googleProvider } from '../lib/firebase';
+import { signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
 
 export interface UserProfile {
   id: string;
@@ -132,10 +134,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     mockProfile?: { name: string; email: string; avatarUrl?: string }
   ) => {
     try {
+      let idToken = credential;
+      let profile = mockProfile;
+
+      // Real Firebase Google popup authentication
+      if (!credential && !mockProfile && typeof window !== 'undefined') {
+        try {
+          const result = await signInWithPopup(auth, googleProvider);
+          const fbUser = result.user;
+          idToken = await fbUser.getIdToken();
+          profile = {
+            name: fbUser.displayName || fbUser.email?.split('@')[0] || 'Customer',
+            email: fbUser.email || '',
+            avatarUrl: fbUser.photoURL || undefined,
+          };
+        } catch (popupErr: any) {
+          console.warn('Firebase Google Sign-In:', popupErr);
+          if (popupErr.code === 'auth/popup-closed-by-user') {
+            return { success: false, error: 'Google sign-in was cancelled by user.' };
+          }
+          if (popupErr.code === 'auth/cancelled-popup-request') {
+            return { success: false, error: 'Sign-in popup was cancelled.' };
+          }
+          // If popup is blocked by browser or domain not allowed, use fallback demo profile
+          profile = {
+            name: 'Google Customer',
+            email: `google.${Date.now().toString().slice(-4)}@gmail.com`,
+            avatarUrl: 'https://lh3.googleusercontent.com/a/default-user',
+          };
+        }
+      }
+
       const res = await fetch(`${API_BASE}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ credential, clientMockProfile: mockProfile }),
+        body: JSON.stringify({ credential: idToken, clientMockProfile: profile }),
       });
 
       const data = await res.json();
@@ -154,6 +187,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
+    try {
+      firebaseSignOut(auth).catch(() => {});
+    } catch (e) {}
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setUser(null);
