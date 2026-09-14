@@ -7,9 +7,10 @@ import { GodownController } from './godown/godown.controller';
 import { DispatchController } from './dispatch/dispatch.controller';
 import { PaymentsController } from './payments/payments.controller';
 import { RazorpayService } from './payments/razorpay.service';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
-  imports: [],
+  imports: [AuthModule],
   controllers: [
     ProductsController,
     CouponsController,

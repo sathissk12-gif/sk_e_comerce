@@ -103,6 +103,18 @@ export interface Order {
   };
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash?: string;
+  googleId?: string;
+  avatarUrl?: string;
+  role: 'CUSTOMER' | 'ADMIN';
+  phone?: string;
+  createdAt: string;
+}
+
 export const INITIAL_PRODUCTS: Product[] = [
   {
     id: 'prod-1',
@@ -561,6 +573,26 @@ export const INITIAL_COUPONS: Coupon[] = [
   }
 ];
 
+export const INITIAL_USERS: User[] = [
+  {
+    id: 'user-admin-1',
+    name: 'Homely Admin',
+    email: 'admin@homely.in',
+    passwordHash: '$2b$10$jxSnlyweDrey3AwQwYEOXOx.G74/G1ml17h61Zj2DAkur1d6pip5.', // Admin@12345
+    role: 'ADMIN',
+    phone: '+91 98410 00001',
+    createdAt: new Date().toISOString()
+  },
+  {
+    id: 'user-customer-1',
+    name: 'Sathish Kumar',
+    email: 'sathish@example.com',
+    role: 'CUSTOMER',
+    phone: '+91 98410 12345',
+    createdAt: new Date().toISOString()
+  }
+];
+
 export class DatabaseStore {
   private static instance: DatabaseStore;
   private dataFile: string;
@@ -568,6 +600,7 @@ export class DatabaseStore {
   public products: Product[] = [];
   public coupons: Coupon[] = [];
   public orders: Order[] = [];
+  public users: User[] = [];
 
   private constructor() {
     const dataDir = path.resolve(__dirname, '../../data');
@@ -593,6 +626,7 @@ export class DatabaseStore {
         this.products = parsed.products || INITIAL_PRODUCTS;
         this.coupons = parsed.coupons || INITIAL_COUPONS;
         this.orders = parsed.orders || [];
+        this.users = parsed.users && parsed.users.length > 0 ? parsed.users : INITIAL_USERS;
         return;
       } catch (err) {
         console.error('Error reading store.json, resetting to initial data:', err);
@@ -601,6 +635,7 @@ export class DatabaseStore {
 
     this.products = INITIAL_PRODUCTS;
     this.coupons = INITIAL_COUPONS;
+    this.users = INITIAL_USERS;
     this.orders = [
       {
         id: 'ord-101',
@@ -728,7 +763,8 @@ export class DatabaseStore {
           {
             products: this.products,
             coupons: this.coupons,
-            orders: this.orders
+            orders: this.orders,
+            users: this.users
           },
           null,
           2

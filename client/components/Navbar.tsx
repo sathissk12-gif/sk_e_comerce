@@ -13,8 +13,12 @@ import {
   User,
   Search,
   LayoutGrid,
-  Info
+  Info,
+  LogIn,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface NavbarProps {
   cartCount?: number;
@@ -31,6 +35,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
+  const { user, logout, openAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [navSearch, setNavSearch] = useState('');
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
@@ -119,15 +124,63 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Info className="w-3.5 h-3.5 text-deep-green" />
               <span>About Us</span>
             </Link>
-            <Link
-              href="/account"
-              className={`px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 ${
-                pathname === '/account' ? 'text-deep-green font-black bg-warm-beige/80' : 'hover:text-charcoal hover:bg-warm-beige/40'
-              }`}
-            >
-              <User className="w-3.5 h-3.5 text-deep-green" />
-              <span>My Account</span>
-            </Link>
+
+            {/* Auth State Button / Dropdown */}
+            {user ? (
+              <div className="relative group">
+                <button className="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-card hover:bg-warm-beige/60 border border-warm-beige text-xs font-bold text-charcoal shadow-sm transition-all">
+                  {user.avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={user.avatarUrl} alt={user.name} className="w-5 h-5 rounded-full object-cover border border-sage/60" />
+                  ) : (
+                    <div className="w-5 h-5 rounded-full bg-deep-green text-muted-gold text-[10px] font-black flex items-center justify-center">
+                      {user.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <span className="max-w-[90px] truncate">{user.name.split(' ')[0]}</span>
+                  <ChevronDown className="w-3 h-3 text-secondary-text group-hover:rotate-180 transition-transform" />
+                </button>
+
+                {/* Dropdown Menu */}
+                <div className="absolute right-0 mt-1 w-48 bg-card border border-warm-beige rounded-2xl shadow-xl py-1.5 hidden group-hover:block hover:block z-50 animate-scale-up">
+                  <div className="px-3.5 py-2 border-b border-warm-beige/60">
+                    <div className="text-xs font-bold text-charcoal truncate">{user.name}</div>
+                    <div className="text-[10px] text-secondary-text truncate">{user.email}</div>
+                  </div>
+                  <Link
+                    href="/account"
+                    className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-charcoal hover:bg-warm-beige/50"
+                  >
+                    <User className="w-3.5 h-3.5 text-deep-green" />
+                    <span>My Account & Orders</span>
+                  </Link>
+                  {user.role === 'ADMIN' && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-deep-green hover:bg-warm-beige/50"
+                    >
+                      <ShieldCheck className="w-3.5 h-3.5 text-muted-gold" />
+                      <span>Admin Portal</span>
+                    </Link>
+                  )}
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50 text-left border-t border-warm-beige/60"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-red-600" />
+                    <span>Sign Out</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => openAuthModal('login')}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-card hover:bg-warm-beige text-deep-green border border-warm-beige shadow-sm transition-all active:scale-95"
+              >
+                <LogIn className="w-3.5 h-3.5 text-deep-green" />
+                <span>Sign In</span>
+              </button>
+            )}
           </nav>
 
           {/* WebSocket Status Indicator */}
@@ -249,6 +302,37 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             <span>My Account & Orders</span>
           </Link>
+          
+          {user ? (
+            <div className="pt-2 border-t border-warm-beige">
+              <div className="px-3 py-1 text-xs font-bold text-charcoal flex items-center justify-between">
+                <span>Signed in as {user.name}</span>
+                <button
+                  onClick={() => {
+                    logout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="text-xs text-red-600 font-bold"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="pt-2 border-t border-warm-beige">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal('login');
+                }}
+                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-deep-green text-cream"
+              >
+                <LogIn className="w-3.5 h-3.5 text-muted-gold" />
+                <span>Sign In / Register</span>
+              </button>
+            </div>
+          )}
+
           <Link
             href="/admin"
             onClick={() => setMobileMenuOpen(false)}

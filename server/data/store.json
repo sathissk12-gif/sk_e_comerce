@@ -837,5 +837,60 @@
         "trackingUrl": "https://track.festivecouriers.in/BD0015477"
       }
     }
+  ],
+  "users": [
+    {
+      "id": "user-admin-1",
+      "name": "Homely Admin",
+      "email": "admin@homely.in",
+      "passwordHash": "$2b$10$jxSnlyweDrey3AwQwYEOXOx.G74/G1ml17h61Zj2DAkur1d6pip5.",
+      "role": "ADMIN",
+      "phone": "+91 98410 00001",
+      "createdAt": "2026-09-14T15:14:26.458Z"
+    },
+    {
+      "id": "user-customer-1",
+      "name": "Sathish Kumar",
+      "email": "sathish@example.com",
+      "role": "CUSTOMER",
+      "phone": "+91 98410 12345",
+      "createdAt": "2026-09-14T15:14:26.458Z"
+    },
+    {
+      "id": "user-4c5eb635-8531-474e-8516-fa1fc710aa34",
+      "name": "Kavitha Rajan",
+      "email": "kavitha@example.com",
+      "passwordHash": "$2b$10$9nWNrxrBCgeFkCfdNCyF.u3a28Ib73HbMfWcdlqhmiHegeKK5FZfe",
+      "role": "CUSTOMER",
+      "phone": "",
+      "createdAt": "2026-09-14T15:14:49.918Z"
+    },
+    {
+      "id": "user-g-d30c0d83-0d78-4822-ac35-1c4ede1da067",
+      "name": "Google User Test",
+      "email": "googleuser@gmail.com",
+      "googleId": "google-1789398896203",
+      "avatarUrl": "https://lh3.googleusercontent.com/a/default-user",
+      "role": "CUSTOMER",
+      "createdAt": "2026-09-14T15:14:56.203Z"
+    },
+    {
+      "id": "user-711546ec-d168-4cc8-b862-65c48fc9de43",
+      "name": "Ramesh Sundaram",
+      "email": "ramesh.s@example.com",
+      "passwordHash": "$2b$10$e63.LYq2w0Y8XeHIvPiBzudXX4g2PJIs5QIqDkeI3maWSATd9ijaW",
+      "role": "CUSTOMER",
+      "phone": "+91 94440 98765",
+      "createdAt": "2026-09-14T15:18:26.976Z"
+    },
+    {
+      "id": "user-g-94422e35-0947-48ce-9253-00c106d12238",
+      "name": "Priya Sharma",
+      "email": "priya.sharma@gmail.com",
+      "googleId": "google-1789399107136",
+      "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
+      "role": "CUSTOMER",
+      "createdAt": "2026-09-14T15:18:27.136Z"
+    }
   ]
 }

@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import Script from 'next/script';
+import { AuthProvider } from '../context/AuthContext';
+import { AuthModal } from '../components/AuthModal';
 
 export const metadata: Metadata = {
   title: 'Homely - Festive Offers 2026',
@@ -20,9 +22,16 @@ export default function RootLayout({
           src="https://checkout.razorpay.com/v1/checkout.js"
           strategy="beforeInteractive"
         />
+        <Script
+          src="https://accounts.google.com/gsi/client"
+          strategy="afterInteractive"
+        />
       </head>
       <body className="min-h-screen bg-cream text-charcoal flex flex-col">
-        {children}
+        <AuthProvider>
+          {children}
+          <AuthModal />
+        </AuthProvider>
       </body>
     </html>
   );

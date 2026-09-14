@@ -19,11 +19,16 @@ import {
   Mail,
   Store,
   RefreshCw,
-  ArrowRight
+  ArrowRight,
+  LogIn,
+  LogOut,
+  ShieldCheck
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { useAuth } from '../../context/AuthContext';
 
 export default function AccountPage() {
+  const { user, logout, openAuthModal } = useAuth();
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [trackingOrderId, setTrackingOrderId] = useState<string | null>(null);
@@ -137,31 +142,74 @@ export default function AccountPage() {
         <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
           {/* Profile Card & Address */}
           <div className="space-y-6">
-            {/* User Info Box */}
-            <div className="bg-card rounded-2xl p-6 border border-warm-beige shadow-sm space-y-4">
-              <div className="flex items-center gap-4 pb-4 border-b border-warm-beige">
-                <div className="w-14 h-14 rounded-2xl bg-deep-green text-muted-gold flex items-center justify-center font-black text-xl shadow-md shadow-deep-green/20 border border-muted-gold/40">
-                  SK
+            {/* User Info Box or Sign In Prompt */}
+            {user ? (
+              <div className="bg-card rounded-2xl p-6 border border-warm-beige shadow-sm space-y-4">
+                <div className="flex items-center justify-between pb-4 border-b border-warm-beige">
+                  <div className="flex items-center gap-4">
+                    {user.avatarUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.name}
+                        className="w-14 h-14 rounded-2xl object-cover border border-sage/60 shadow-md"
+                      />
+                    ) : (
+                      <div className="w-14 h-14 rounded-2xl bg-deep-green text-muted-gold flex items-center justify-center font-black text-xl shadow-md shadow-deep-green/20 border border-muted-gold/40">
+                        {user.name.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="font-bold text-lg text-charcoal">{user.name}</h3>
+                      <span className="text-xs text-deep-green font-bold bg-warm-beige px-2 py-0.5 rounded border border-sage/40">
+                        {user.role === 'ADMIN' ? 'Homely Admin' : 'Verified Customer'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={logout}
+                    title="Sign Out"
+                    className="p-2 rounded-xl text-secondary-text hover:text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <LogOut className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div className="space-y-2 text-xs text-secondary-text">
+                  {user.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="w-4 h-4 text-deep-green" />
+                      <span>{user.phone}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-deep-green" />
+                    <span>{user.email}</span>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-card rounded-2xl p-6 border border-warm-beige shadow-sm space-y-4 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-warm-beige text-deep-green mx-auto flex items-center justify-center font-black">
+                  <User className="w-6 h-6 text-deep-green" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-charcoal">Sathish Kumar</h3>
-                  <span className="text-xs text-deep-green font-bold bg-warm-beige px-2 py-0.5 rounded border border-sage/40">
-                    Verified Customer
-                  </span>
+                  <h3 className="font-bold text-base text-charcoal">Sign In to Your Account</h3>
+                  <p className="text-xs text-secondary-text mt-1">
+                    Sign in with Google or Email to track personal orders and manage addresses.
+                  </p>
+                </div>
+                <div className="space-y-2 pt-2">
+                  <button
+                    onClick={() => openAuthModal('login')}
+                    className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-deep-green hover:bg-deep-green-hover text-cream text-xs font-bold shadow-md shadow-deep-green/20 transition-all"
+                  >
+                    <LogIn className="w-3.5 h-3.5 text-muted-gold" />
+                    <span>Sign In or Register</span>
+                  </button>
                 </div>
               </div>
-
-              <div className="space-y-2 text-xs text-secondary-text">
-                <div className="flex items-center gap-2">
-                  <Phone className="w-4 h-4 text-deep-green" />
-                  <span>+91 98410 12345</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-deep-green" />
-                  <span>sathish@example.com</span>
-                </div>
-              </div>
-            </div>
+            )}
 
             {/* Saved Delivery Address */}
             <div className="bg-card rounded-2xl p-6 border border-warm-beige shadow-sm space-y-3">

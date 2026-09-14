@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Banknote, Zap, ShieldCheck, MapPin, Phone, User, CheckCircle2 } from 'lucide-react';
 import { CartItem } from './CartDrawer';
+import { useAuth } from '../context/AuthContext';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -27,13 +28,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   couponCode,
   onOrderSuccess
 }) => {
-  const [name, setName] = useState('Sathish Kumar');
-  const [phone, setPhone] = useState('+91 98410 12345');
-  const [email, setEmail] = useState('sathish@example.com');
+  const { user } = useAuth();
+  const [name, setName] = useState(user?.name || 'Sathish Kumar');
+  const [phone, setPhone] = useState(user?.phone || '+91 98410 12345');
+  const [email, setEmail] = useState(user?.email || 'sathish@example.com');
   const [street, setStreet] = useState('12, Gandhi Salai, T. Nagar');
   const [city, setCity] = useState('Chennai');
   const [state, setState] = useState('Tamil Nadu');
   const [pincode, setPincode] = useState('600017');
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.email) setEmail(user.email);
+      if (user.phone) setPhone(user.phone);
+    }
+  }, [user]);
 
   const [paymentMode, setPaymentMode] = useState<'RAZORPAY' | 'COD' | 'TEST_PAY'>('RAZORPAY');
   const [isSubmitting, setIsSubmitting] = useState(false);
