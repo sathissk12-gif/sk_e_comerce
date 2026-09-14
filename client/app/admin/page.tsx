@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { PrintSlipModal } from '../../components/PrintSlipModal';
+import { getApiBaseUrl } from '../../lib/api';
 import {
   Building2,
   Truck,
@@ -111,9 +112,9 @@ export default function AdminPage() {
     setIsLoading(true);
     try {
       const [ordersRes, prodsRes, coupRes] = await Promise.all([
-        fetch('http://localhost:4000/api/orders'),
-        fetch('http://localhost:4000/api/products'),
-        fetch('http://localhost:4000/api/coupons')
+        fetch(`${getApiBaseUrl()}/api/orders`),
+        fetch(`${getApiBaseUrl()}/api/products`),
+        fetch(`${getApiBaseUrl()}/api/coupons`)
       ]);
 
       if (ordersRes.ok) {
@@ -138,7 +139,7 @@ export default function AdminPage() {
   useEffect(() => {
     fetchData();
 
-    const socket = io('http://localhost:4000', {
+    const socket = io(getApiBaseUrl(), {
       transports: ['websocket', 'polling']
     });
     socketRef.current = socket;
@@ -170,7 +171,7 @@ export default function AdminPage() {
   // Order Pipeline Actions
   const handleApprove = async (orderId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/orders/${orderId}/approve`, { method: 'POST' });
+      const res = await fetch(`${getApiBaseUrl()}/api/orders/${orderId}/approve`, { method: 'POST' });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
@@ -179,7 +180,7 @@ export default function AdminPage() {
 
   const handlePack = async (orderId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/godown/pack/${orderId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/godown/pack/${orderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packedBy: 'Saravanan (Godown Manager)' })
@@ -197,7 +198,7 @@ export default function AdminPage() {
     };
 
     try {
-      const res = await fetch(`http://localhost:4000/api/dispatch/ship/${orderId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/dispatch/ship/${orderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -213,7 +214,7 @@ export default function AdminPage() {
 
   const handleDeliver = async (orderId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/dispatch/deliver/${orderId}`, { method: 'POST' });
+      const res = await fetch(`${getApiBaseUrl()}/api/dispatch/deliver/${orderId}`, { method: 'POST' });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
@@ -225,8 +226,8 @@ export default function AdminPage() {
     e.preventDefault();
     try {
       const url = editingProduct
-        ? `http://localhost:4000/api/products/${editingProduct.id}`
-        : 'http://localhost:4000/api/products';
+        ? `${getApiBaseUrl()}/api/products/${editingProduct.id}`
+        : `${getApiBaseUrl()}/api/products`;
       const method = editingProduct ? 'PUT' : 'POST';
 
       const res = await fetch(url, {
@@ -248,7 +249,7 @@ export default function AdminPage() {
   const handleDeleteProduct = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/products/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${getApiBaseUrl()}/api/products/${id}`, { method: 'DELETE' });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
@@ -257,7 +258,7 @@ export default function AdminPage() {
 
   const handleAdjustStock = async (id: string, delta: number) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/products/${id}/stock`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/products/${id}/stock`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ delta })
@@ -272,7 +273,7 @@ export default function AdminPage() {
   const handleSaveCoupon = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch('http://localhost:4000/api/coupons', {
+      const res = await fetch(`${getApiBaseUrl()}/api/coupons`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(couponForm)
@@ -291,7 +292,7 @@ export default function AdminPage() {
   const handleDeleteCoupon = async (code: string) => {
     if (!confirm(`Delete coupon "${code}"?`)) return;
     try {
-      const res = await fetch(`http://localhost:4000/api/coupons/${code}`, { method: 'DELETE' });
+      const res = await fetch(`${getApiBaseUrl()}/api/coupons/${code}`, { method: 'DELETE' });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);

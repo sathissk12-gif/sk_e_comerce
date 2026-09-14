@@ -11,8 +11,9 @@ import { Order } from '../data/db';
 
 @WebSocketGateway({
   cors: {
-    origin: '*',
-    methods: ['GET', 'POST']
+    origin: true,
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 })
 export class EventsGateway implements OnGatewayConnection, OnGatewayDisconnect {

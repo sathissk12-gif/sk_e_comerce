@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, CreditCard, Banknote, Zap, ShieldCheck, MapPin, Phone, User, CheckCircle2 } from 'lucide-react';
 import { CartItem } from './CartDrawer';
 import { useAuth } from '../context/AuthContext';
+import { getApiBaseUrl } from '../lib/api';
 
 interface CheckoutModalProps {
   isOpen: boolean;
@@ -78,7 +79,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
       razorpayPaymentId: rzpPaymentId
     };
 
-    const res = await fetch('http://localhost:4000/api/orders', {
+    const res = await fetch(`${getApiBaseUrl()}/api/orders`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -104,7 +105,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
 
     try {
       if (paymentMode === 'RAZORPAY') {
-        const rzpRes = await fetch('http://localhost:4000/api/payments/create-order', {
+        const rzpRes = await fetch(`${getApiBaseUrl()}/api/payments/create-order`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -135,7 +136,7 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
             },
             handler: async (response: any) => {
               try {
-                await fetch('http://localhost:4000/api/payments/verify', {
+                await fetch(`${getApiBaseUrl()}/api/payments/verify`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
                   body: JSON.stringify({

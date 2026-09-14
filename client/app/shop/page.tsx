@@ -17,6 +17,7 @@ import {
   Check
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { getApiBaseUrl } from '../../lib/api';
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -56,7 +57,7 @@ function ShopContent() {
 
   const fetchProducts = async () => {
     try {
-      const res = await fetch('http://localhost:4000/api/products');
+      const res = await fetch(`${getApiBaseUrl()}/api/products`);
       if (res.ok) {
         const data = await res.json();
         setProducts(data.products || []);
@@ -69,7 +70,7 @@ function ShopContent() {
   useEffect(() => {
     fetchProducts();
 
-    const socket = io('http://localhost:4000', {
+    const socket = io(getApiBaseUrl(), {
       transports: ['websocket', 'polling']
     });
 
@@ -171,7 +172,7 @@ function ShopContent() {
 
   const handleApplyCoupon = async (code: string) => {
     try {
-      const res = await fetch('http://localhost:4000/api/coupons/validate', {
+      const res = await fetch(`${getApiBaseUrl()}/api/coupons/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, cartTotal })

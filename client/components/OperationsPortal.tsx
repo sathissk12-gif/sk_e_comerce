@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 import { PrintSlipModal } from './PrintSlipModal';
+import { getApiBaseUrl } from '../lib/api';
 
 interface OperationsPortalProps {
   isOpen: boolean;
@@ -81,7 +82,7 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/orders');
+      const res = await fetch(`${getApiBaseUrl()}/api/orders`);
       if (res.ok) {
         const data = await res.json();
         setOrders(data.orders || []);
@@ -97,7 +98,7 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
     fetchOrders();
 
     // Establish WebSocket connection
-    const socket = io('http://localhost:4000', {
+    const socket = io(getApiBaseUrl(), {
       transports: ['websocket', 'polling']
     });
     socketRef.current = socket;
@@ -146,7 +147,7 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
   // Handlers
   const handleApprove = async (orderId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/orders/${orderId}/approve`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/orders/${orderId}/approve`, {
         method: 'POST'
       });
       if (res.ok) {
@@ -159,7 +160,7 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
 
   const handlePack = async (orderId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/godown/pack/${orderId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/godown/pack/${orderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ packedBy: 'Saravanan (Godown Manager)' })
@@ -179,7 +180,7 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
     };
 
     try {
-      const res = await fetch(`http://localhost:4000/api/dispatch/ship/${orderId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/dispatch/ship/${orderId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -197,7 +198,7 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
 
   const handleDeliver = async (orderId: string) => {
     try {
-      const res = await fetch(`http://localhost:4000/api/dispatch/deliver/${orderId}`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/dispatch/deliver/${orderId}`, {
         method: 'POST'
       });
       if (res.ok) {

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { getApiBaseUrl } from '../lib/api';
 import {
   X,
   Mail,
@@ -61,7 +62,7 @@ export const AuthModal: React.FC = () => {
 
     const initGoogleGsi = async () => {
       try {
-        const res = await fetch('http://localhost:4000/api/auth/config');
+        const res = await fetch(`${getApiBaseUrl()}/api/auth/config`);
         if (res.ok) {
           const config = await res.json();
           if (config.googleClientId && window.google?.accounts?.id) {

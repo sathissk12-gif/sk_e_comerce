@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { io } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext';
+import { getApiBaseUrl } from '../../lib/api';
 
 export default function AccountPage() {
   const { user, logout, openAuthModal } = useAuth();
@@ -38,7 +39,7 @@ export default function AccountPage() {
   const fetchOrders = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('http://localhost:4000/api/orders');
+      const res = await fetch(`${getApiBaseUrl()}/api/orders`);
       if (res.ok) {
         const data = await res.json();
         setOrders(data.orders || []);
@@ -53,7 +54,7 @@ export default function AccountPage() {
   useEffect(() => {
     fetchOrders();
 
-    const socket = io('http://localhost:4000');
+    const socket = io(getApiBaseUrl());
     socket.on('order:status_change', () => {
       fetchOrders();
     });

@@ -19,6 +19,7 @@ import {
   Store
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { getApiBaseUrl } from '../lib/api';
 
 export default function HomePage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -38,14 +39,14 @@ export default function HomePage() {
 
   // Fetch products
   useEffect(() => {
-    fetch('http://localhost:4000/api/products')
+    fetch(`${getApiBaseUrl()}/api/products`)
       .then(res => res.json())
       .then(data => {
         setProducts(data.products || []);
       })
       .catch(e => console.warn('Products fetch error:', e));
 
-    const socket = io('http://localhost:4000', {
+    const socket = io(getApiBaseUrl(), {
       transports: ['websocket', 'polling']
     });
 
@@ -106,7 +107,7 @@ export default function HomePage() {
 
   const handleApplyCoupon = async (code: string) => {
     try {
-      const res = await fetch('http://localhost:4000/api/coupons/validate', {
+      const res = await fetch(`${getApiBaseUrl()}/api/coupons/validate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, cartTotal })

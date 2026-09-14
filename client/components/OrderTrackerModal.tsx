@@ -13,6 +13,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { io } from 'socket.io-client';
+import { getApiBaseUrl } from '../lib/api';
 
 interface OrderTrackerModalProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
   const fetchOrder = async (id: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/orders/${id}`);
+      const res = await fetch(`${getApiBaseUrl()}/api/orders/${id}`);
       if (res.ok) {
         const data = await res.json();
         setOrder(data.order);
@@ -47,7 +48,7 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
     if (orderId && isOpen) {
       fetchOrder(orderId);
 
-      const socket = io('http://localhost:4000');
+      const socket = io(getApiBaseUrl());
       socket.on('connect', () => {
         socket.emit('join:order', orderId);
       });
