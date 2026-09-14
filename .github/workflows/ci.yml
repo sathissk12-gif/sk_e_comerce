@@ -41,41 +41,71 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
+      - name: Resolve VPS Config & Credentials
+        id: vps_config
+        run: |
+          USER="${{ secrets.VPS_USERNAME }}"
+          if [ -z "$USER" ]; then
+            USER="${{ secrets.VPS_USER }}"
+          fi
+          if [ -z "$USER" ]; then
+            USER="root"
+          fi
+          echo "user=$USER" >> $GITHUB_OUTPUT
+
+          PORT="${{ secrets.VPS_PORT }}"
+          if [ -z "$PORT" ]; then
+            PORT="22"
+          fi
+          echo "port=$PORT" >> $GITHUB_OUTPUT
+
       - name: SSH and Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME || secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY || secrets.VPS_KEY }}
+          username: ${{ steps.vps_config.outputs.user }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           password: ${{ secrets.VPS_PASSWORD }}
-          port: ${{ secrets.VPS_PORT || 22 }}
+          port: ${{ steps.vps_config.outputs.port }}
           script_stop: true
           script: |
-            echo "🚀 [Deploy] Connected to VPS. Moving to project directory..."
+            echo "🚀 [Deploy] Connected to VPS as $(whoami)"
+            
+            # Source profile/nvm to ensure node, npm, and pm2 are available in non-interactive SSH
+            [ -f ~/.profile ] && source ~/.profile
+            [ -f ~/.bashrc ] && source ~/.bashrc
+            if [ -d "$HOME/.nvm" ]; then
+              export NVM_DIR="$HOME/.nvm"
+              [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            fi
+            
+            # Locate project directory
             PROJECT_DIR="${{ secrets.VPS_PROJECT_DIR }}"
             if [ -z "$PROJECT_DIR" ]; then
               if [ -d "$HOME/sk_e_comerce" ]; then
                 PROJECT_DIR="$HOME/sk_e_comerce"
               elif [ -d "/var/www/sk_e_comerce" ]; then
                 PROJECT_DIR="/var/www/sk_e_comerce"
+              elif [ -d "/root/sk_e_comerce" ]; then
+                PROJECT_DIR="/root/sk_e_comerce"
               else
-                PROJECT_DIR="."
+                PROJECT_DIR=$(pwd)
               fi
             fi
             
             echo "📂 Deploying in: $PROJECT_DIR"
-            cd "$PROJECT_DIR" || exit 1
+            cd "$PROJECT_DIR" || { echo "Directory $PROJECT_DIR not found!"; exit 1; }
             
-            echo "📥 Pulling latest commits from GitHub..."
+            echo "📥 Fetching and syncing latest commits from GitHub..."
             git fetch origin main
             git reset --hard origin/main
             
-            echo "⚙️ Installing & building Backend (NestJS)..."
+            echo "⚙️ Installing & building Backend..."
             cd server
             npm install
             npm run build
             
-            echo "⚙️ Installing & building Frontend (Next.js)..."
+            echo "⚙️ Installing & building Frontend..."
             cd ../client
             npm install
             npm run build
@@ -84,6 +114,8 @@ jobs:
             cd ..
             if command -v pm2 &> /dev/null; then
               pm2 restart all || true
+            else
+              echo "Notice: PM2 not found globally, checking npm run start"
             fi
             
             echo "✅ [Deploy] VPS Deployment Completed Successfully!"
