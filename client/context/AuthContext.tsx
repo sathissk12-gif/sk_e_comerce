@@ -149,20 +149,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             avatarUrl: fbUser.photoURL || undefined,
           };
         } catch (popupErr: any) {
-          console.warn('Firebase Google Sign-In:', popupErr);
+          console.error('Firebase Google Sign-In Error:', popupErr);
           if (popupErr.code === 'auth/popup-closed-by-user') {
-            return { success: false, error: 'Google sign-in was cancelled by user.' };
+            return { success: false, error: 'Google sign-in was cancelled.' };
           }
           if (popupErr.code === 'auth/cancelled-popup-request') {
             return { success: false, error: 'Sign-in popup was cancelled.' };
           }
-          // If popup is blocked by browser or domain not allowed, use fallback demo profile
-          profile = {
-            name: 'Google Customer',
-            email: `google.${Date.now().toString().slice(-4)}@gmail.com`,
-            avatarUrl: 'https://lh3.googleusercontent.com/a/default-user',
+          if (popupErr.code === 'auth/unauthorized-domain') {
+            const domain = window.location.hostname;
+            return {
+              success: false,
+              error: `Domain '${domain}' is not authorized in Firebase. Please add '${domain}' to Authorized Domains in Firebase Console > Authentication > Settings.`,
+            };
+          }
+          if (popupErr.code === 'auth/operation-not-allowed') {
+            return {
+              success: false,
+              error: 'Google Sign-In is disabled. Please enable Google provider in Firebase Console > Authentication > Sign-in method.',
+            };
+          }
+          if (popupErr.code === 'auth/popup-blocked') {
+            return {
+              success: false,
+              error: 'Pop-up was blocked by your browser. Please allow pop-ups for this site.',
+            };
+          }
+          return {
+            success: false,
+            error: popupErr.message || `Google sign-in error (${popupErr.code || 'unknown'})`,
           };
         }
+      }
+
+      if (!idToken && !profile?.email) {
+        return { success: false, error: 'No Google account credentials received. Please try again.' };
       }
 
       const res = await fetch(`${getApiBaseUrl()}/api/auth/google`, {
