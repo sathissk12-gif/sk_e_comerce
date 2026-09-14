@@ -1,0 +1,22 @@
+{
+  "name": "homely-ecommerce-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Homely - Everyday Living, Better. Modern festive e-commerce platform built with Next.js 14 and NestJS.",
+  "scripts": {
+    "build": "npm run build --prefix client && npm run build --prefix server",
+    "build:client": "npm run build --prefix client",
+    "build:server": "npm run build --prefix server",
+    "start:client": "npm run start --prefix client",
+    "start:server": "npm run start --prefix server"
+  },
+  "keywords": [
+    "nextjs",
+    "nestjs",
+    "ecommerce",
+    "websockets",
+    "razorpay"
+  ],
+  "author": "sathissk12-gif",
+  "license": "MIT"
+}
