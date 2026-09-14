@@ -10,6 +10,7 @@ import { OAuth2Client } from 'google-auth-library';
 import { v4 as uuidv4 } from 'uuid';
 import { DatabaseStore, User } from '../data/db';
 import { JWT_SECRET } from './jwt.guard';
+import { isAuthorizedAdminEmail, AUTHORIZED_ADMIN_EMAILS } from './admin.guard';
 
 export interface RegisterDto {
   name: string;
@@ -95,12 +96,13 @@ export class AuthService {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
+    const isAdmin = isAuthorizedAdminEmail(normalizedEmail);
     const newUser: User = {
       id: `user-${uuidv4()}`,
       name: name.trim(),
       email: normalizedEmail,
       passwordHash,
-      role: 'CUSTOMER',
+      role: isAdmin ? 'ADMIN' : 'CUSTOMER',
       phone: phone?.trim() || '',
       createdAt: new Date().toISOString()
     };
@@ -136,6 +138,11 @@ export class AuthService {
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       throw new UnauthorizedException('Invalid email or password.');
+    }
+
+    if (isAuthorizedAdminEmail(normalizedEmail) && user.role !== 'ADMIN') {
+      user.role = 'ADMIN';
+      this.db.save();
     }
 
     const token = this.generateToken(user);
@@ -197,8 +204,8 @@ export class AuthService {
     }
 
     const normalizedEmail = googleEmail.trim().toLowerCase();
+    const isAdmin = isAuthorizedAdminEmail(normalizedEmail);
     let user = this.db.users.find(u => u.email.toLowerCase() === normalizedEmail);
-
     if (user) {
       // Link Google ID and update avatar if newly available
       let updated = false;
@@ -208,6 +215,10 @@ export class AuthService {
       }
       if (!user.avatarUrl && googlePicture) {
         user.avatarUrl = googlePicture;
+        updated = true;
+      }
+      if (isAdmin && user.role !== 'ADMIN') {
+        user.role = 'ADMIN';
         updated = true;
       }
       if (updated) {
@@ -221,7 +232,7 @@ export class AuthService {
         email: normalizedEmail,
         googleId: googleSub,
         avatarUrl: googlePicture,
-        role: 'CUSTOMER',
+        role: isAdmin ? 'ADMIN' : 'CUSTOMER',
         createdAt: new Date().toISOString()
       };
       this.db.users.push(user);

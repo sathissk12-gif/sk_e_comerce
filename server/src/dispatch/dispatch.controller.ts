@@ -4,11 +4,13 @@ import {
   Post,
   Param,
   Body,
+  UseGuards,
   NotFoundException,
   BadRequestException
 } from '@nestjs/common';
 import { DatabaseStore } from '../data/db';
 import { EventsGateway } from '../events/events.gateway';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('api/dispatch')
 export class DispatchController {
@@ -28,6 +30,7 @@ export class DispatchController {
     };
   }
 
+  @UseGuards(AdminGuard)
   @Post('ship/:id')
   dispatchOrder(
     @Param('id') id: string,
@@ -89,6 +92,7 @@ export class DispatchController {
     };
   }
 
+  @UseGuards(AdminGuard)
   @Post('deliver/:id')
   markDelivered(@Param('id') id: string) {
     const order = this.db.orders.find(o => o.id === id || o.orderNumber === id);

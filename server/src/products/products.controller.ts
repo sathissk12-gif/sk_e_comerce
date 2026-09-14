@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Put, Delete, Patch, Param, Query, Body, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Patch, Param, Query, Body, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
 import { DatabaseStore, Product, ProductVariant } from '../data/db';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('api/products')
 export class ProductsController {
@@ -67,6 +68,7 @@ export class ProductsController {
     return { success: true, product: prod };
   }
 
+  @UseGuards(AdminGuard)
   @Post()
   create(@Body() body: any) {
     if (!body.name || !body.category || !body.mrp || !body.offerPrice) {
@@ -118,6 +120,7 @@ export class ProductsController {
     };
   }
 
+  @UseGuards(AdminGuard)
   @Put(':id')
   update(@Param('id') id: string, @Body() body: any) {
     const index = this.db.products.findIndex(p => p.id === id);
@@ -157,6 +160,7 @@ export class ProductsController {
     return { success: true, message: 'Product updated successfully', product: prod };
   }
 
+  @UseGuards(AdminGuard)
   @Patch(':id/stock')
   adjustStock(@Param('id') id: string, @Body() body: { delta?: number; stockQty?: number }) {
     const prod = this.db.products.find(p => p.id === id);
@@ -175,6 +179,7 @@ export class ProductsController {
     return { success: true, newStock: v.stockQty, product: prod };
   }
 
+  @UseGuards(AdminGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     const index = this.db.products.findIndex(p => p.id === id);

@@ -4,11 +4,13 @@ import {
   Post,
   Param,
   Body,
+  UseGuards,
   NotFoundException,
   BadRequestException
 } from '@nestjs/common';
 import { DatabaseStore } from '../data/db';
 import { EventsGateway } from '../events/events.gateway';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('api/godown')
 export class GodownController {
@@ -84,6 +86,7 @@ export class GodownController {
     };
   }
 
+  @UseGuards(AdminGuard)
   @Post('pack/:id')
   packOrder(
     @Param('id') id: string,

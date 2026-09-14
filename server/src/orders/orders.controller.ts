@@ -5,11 +5,13 @@ import {
   Body,
   Param,
   Query,
+  UseGuards,
   NotFoundException,
   BadRequestException
 } from '@nestjs/common';
 import { DatabaseStore, Order, OrderItem, OrderStatus } from '../data/db';
 import { EventsGateway } from '../events/events.gateway';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('api/orders')
 export class OrdersController {
@@ -174,6 +176,7 @@ export class OrdersController {
     };
   }
 
+  @UseGuards(AdminGuard)
   @Post(':id/approve')
   approveOrder(@Param('id') id: string) {
     const order = this.db.orders.find(o => o.id === id || o.orderNumber === id);

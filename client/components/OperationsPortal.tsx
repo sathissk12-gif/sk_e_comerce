@@ -19,6 +19,7 @@ import {
 import { io, Socket } from 'socket.io-client';
 import { PrintSlipModal } from './PrintSlipModal';
 import { getApiBaseUrl } from '../lib/api';
+import { useAuth } from '../context/AuthContext';
 
 interface OperationsPortalProps {
   isOpen: boolean;
@@ -31,6 +32,12 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
   onClose,
   onTrackOrder
 }) => {
+  const { token, user } = useAuth();
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
   const [activeTab, setActiveTab] = useState<'ADMIN' | 'GODOWN' | 'DISPATCH'>('ADMIN');
   const [orders, setOrders] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -148,7 +155,8 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
   const handleApprove = async (orderId: string) => {
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/orders/${orderId}/approve`, {
-        method: 'POST'
+        method: 'POST',
+        headers: authHeaders
       });
       if (res.ok) {
         fetchOrders();
@@ -162,8 +170,8 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/godown/pack/${orderId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packedBy: 'Saravanan (Godown Manager)' })
+        headers: authHeaders,
+        body: JSON.stringify({ packedBy: `Admin (${user?.email || 'Operations Manager'})` })
       });
       if (res.ok) {
         fetchOrders();
@@ -182,7 +190,7 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/dispatch/ship/${orderId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           courierPartner: data.courier,
           trackingNumber: data.tracking
@@ -199,7 +207,8 @@ export const OperationsPortal: React.FC<OperationsPortalProps> = ({
   const handleDeliver = async (orderId: string) => {
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/dispatch/deliver/${orderId}`, {
-        method: 'POST'
+        method: 'POST',
+        headers: authHeaders
       });
       if (res.ok) {
         fetchOrders();

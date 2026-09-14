@@ -19,6 +19,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { isAuthorizedAdmin } from '../lib/auth-constants';
 
 interface NavbarProps {
   cartCount?: number;
@@ -154,7 +155,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     <User className="w-3.5 h-3.5 text-deep-green" />
                     <span>My Account & Orders</span>
                   </Link>
-                  {user.role === 'ADMIN' && (
+                  {user && isAuthorizedAdmin(user.email) && (
                     <Link
                       href="/admin"
                       className="flex items-center gap-2 px-3.5 py-2 text-xs font-bold text-deep-green hover:bg-warm-beige/50"
@@ -192,18 +193,20 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="font-semibold">{isWsConnected ? 'Live' : 'Sync'}</span>
           </div>
 
-          {/* Admin Portal Button */}
-          <Link
-            href="/admin"
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 border ${
-              pathname === '/admin'
-                ? 'bg-deep-green text-muted-gold border-muted-gold shadow-md'
-                : 'bg-card hover:bg-warm-beige text-deep-green border-warm-beige shadow-sm'
-            }`}
-          >
-            <ShieldCheck className="w-3.5 h-3.5 text-muted-gold" />
-            <span className="hidden sm:inline">Admin</span>
-          </Link>
+          {/* Admin Portal Button - Only visible to authorized administrators */}
+          {user && isAuthorizedAdmin(user.email) && (
+            <Link
+              href="/admin"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 border ${
+                pathname === '/admin'
+                  ? 'bg-deep-green text-muted-gold border-muted-gold shadow-md'
+                  : 'bg-card hover:bg-warm-beige text-deep-green border-warm-beige shadow-sm'
+              }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-muted-gold" />
+              <span className="hidden sm:inline">Admin</span>
+            </Link>
+          )}
 
           {/* Cart Button */}
           {onOpenCart && (
@@ -333,14 +336,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           )}
 
-          <Link
-            href="/admin"
-            onClick={() => setMobileMenuOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-deep-green text-muted-gold"
-          >
-            <ShieldCheck className="w-4 h-4 text-muted-gold" />
-            <span>Admin Portal</span>
-          </Link>
+          {user && isAuthorizedAdmin(user.email) && (
+            <Link
+              href="/admin"
+              onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold bg-deep-green text-muted-gold"
+            >
+              <ShieldCheck className="w-4 h-4 text-muted-gold" />
+              <span>Admin Portal</span>
+            </Link>
+          )}
         </div>
       )}
     </header>

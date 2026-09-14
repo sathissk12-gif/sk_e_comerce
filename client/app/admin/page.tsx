@@ -6,6 +6,8 @@ import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { PrintSlipModal } from '../../components/PrintSlipModal';
 import { getApiBaseUrl } from '../../lib/api';
+import { useAuth } from '../../context/AuthContext';
+import { isAuthorizedAdmin, AUTHORIZED_ADMIN_EMAILS } from '../../lib/auth-constants';
 import {
   Building2,
   Truck,
@@ -22,11 +24,24 @@ import {
   X,
   Printer,
   ChevronRight,
-  Tag
+  Tag,
+  Lock,
+  ShieldAlert,
+  ShieldCheck,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
 export default function AdminPage() {
+  const { user, token, isLoading: authLoading, openAuthModal, logout } = useAuth();
+  const isAdmin = user ? isAuthorizedAdmin(user.email) : false;
+
+  const authHeaders = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {})
+  };
+
   const [activeTab, setActiveTab] = useState<'PRODUCTS' | 'ORDERS' | 'COUPONS' | 'GODOWN'>('ORDERS');
   const [orders, setOrders] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -171,7 +186,10 @@ export default function AdminPage() {
   // Order Pipeline Actions
   const handleApprove = async (orderId: string) => {
     try {
-      const res = await fetch(`${getApiBaseUrl()}/api/orders/${orderId}/approve`, { method: 'POST' });
+      const res = await fetch(`${getApiBaseUrl()}/api/orders/${orderId}/approve`, {
+        method: 'POST',
+        headers: authHeaders
+      });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
@@ -182,8 +200,8 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/godown/pack/${orderId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ packedBy: 'Saravanan (Godown Manager)' })
+        headers: authHeaders,
+        body: JSON.stringify({ packedBy: `Admin (${user?.email || 'Operations Manager'})` })
       });
       if (res.ok) fetchData();
     } catch (e) {
@@ -200,7 +218,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/dispatch/ship/${orderId}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({
           courierPartner: data.courier,
           trackingNumber: data.tracking
@@ -214,7 +232,10 @@ export default function AdminPage() {
 
   const handleDeliver = async (orderId: string) => {
     try {
-      const res = await fetch(`${getApiBaseUrl()}/api/dispatch/deliver/${orderId}`, { method: 'POST' });
+      const res = await fetch(`${getApiBaseUrl()}/api/dispatch/deliver/${orderId}`, {
+        method: 'POST',
+        headers: authHeaders
+      });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
@@ -232,7 +253,7 @@ export default function AdminPage() {
 
       const res = await fetch(url, {
         method,
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(productForm)
       });
 
@@ -249,7 +270,10 @@ export default function AdminPage() {
   const handleDeleteProduct = async (id: string) => {
     if (!confirm('Are you sure you want to delete this product?')) return;
     try {
-      const res = await fetch(`${getApiBaseUrl()}/api/products/${id}`, { method: 'DELETE' });
+      const res = await fetch(`${getApiBaseUrl()}/api/products/${id}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
@@ -260,7 +284,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/products/${id}/stock`, {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ delta })
       });
       if (res.ok) fetchData();
@@ -275,7 +299,7 @@ export default function AdminPage() {
     try {
       const res = await fetch(`${getApiBaseUrl()}/api/coupons`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify(couponForm)
       });
 
@@ -292,7 +316,10 @@ export default function AdminPage() {
   const handleDeleteCoupon = async (code: string) => {
     if (!confirm(`Delete coupon "${code}"?`)) return;
     try {
-      const res = await fetch(`${getApiBaseUrl()}/api/coupons/${code}`, { method: 'DELETE' });
+      const res = await fetch(`${getApiBaseUrl()}/api/coupons/${code}`, {
+        method: 'DELETE',
+        headers: authHeaders
+      });
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
@@ -316,6 +343,134 @@ export default function AdminPage() {
     ? products.filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()) || p.category.toLowerCase().includes(productSearch.toLowerCase()))
     : products;
 
+  // --- ACCESS CONTROL SECURITY GATES ---
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-cream text-charcoal">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-6">
+          <div className="text-center">
+            <RefreshCw className="w-10 h-10 animate-spin text-muted-gold mx-auto mb-4" />
+            <p className="text-base font-black text-charcoal">Verifying Administrator Access...</p>
+            <p className="text-xs text-secondary-text mt-1">Checking secure session privileges</p>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Not logged in -> High Security Lock Gate
+  if (!user) {
+    return (
+      <div className="min-h-screen flex flex-col bg-cream text-charcoal">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
+          <div className="w-full max-w-md bg-card border-2 border-warm-beige rounded-3xl shadow-2xl p-8 text-center animate-scale-up">
+            <div className="w-16 h-16 bg-deep-green/10 text-deep-green rounded-2xl flex items-center justify-center mx-auto mb-5 border border-deep-green/20 shadow-sm">
+              <Lock className="w-8 h-8 text-deep-green" />
+            </div>
+            <div className="inline-block px-3 py-1 rounded-full bg-deep-green text-cream text-[11px] font-black uppercase tracking-wider mb-3">
+              Protected Production Gate
+            </div>
+            <h1 className="text-2xl font-black text-charcoal mb-2">Administrator Access Required</h1>
+            <p className="text-sm text-secondary-text mb-6">
+              The Homely Operations & Admin Portal is restricted to designated administrator accounts.
+            </p>
+
+            <div className="p-4 bg-warm-beige/50 rounded-2xl border border-warm-beige mb-6 text-left">
+              <p className="text-[11px] font-bold text-deep-green uppercase tracking-wider mb-2">
+                Authorized Administrator Accounts:
+              </p>
+              <ul className="text-xs font-semibold text-charcoal space-y-1.5">
+                {AUTHORIZED_ADMIN_EMAILS.map(em => (
+                  <li key={em} className="flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-muted-gold shrink-0" />
+                    <span className="font-mono">{em}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <button
+              onClick={() => openAuthModal('login')}
+              className="w-full py-3.5 px-6 rounded-2xl bg-deep-green hover:bg-deep-green-hover text-cream font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+            >
+              <LogIn className="w-4 h-4 text-muted-gold" />
+              <span>Sign In as Administrator</span>
+            </button>
+
+            <div className="mt-4">
+              <Link href="/" className="text-xs font-bold text-secondary-text hover:text-deep-green transition-colors">
+                ← Return to Storefront
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // Logged in as non-authorized user -> 403 Forbidden Gate
+  if (!isAdmin) {
+    return (
+      <div className="min-h-screen flex flex-col bg-cream text-charcoal">
+        <Navbar />
+        <main className="flex-1 flex items-center justify-center p-4 sm:p-6">
+          <div className="w-full max-w-md bg-card border-2 border-red-200 rounded-3xl shadow-2xl p-8 text-center animate-scale-up">
+            <div className="w-16 h-16 bg-red-50 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-5 border border-red-200 shadow-sm">
+              <ShieldAlert className="w-8 h-8 text-red-600" />
+            </div>
+            <div className="inline-block px-3 py-1 rounded-full bg-red-100 text-red-800 text-[11px] font-black uppercase tracking-wider mb-3">
+              403 Forbidden • Access Denied
+            </div>
+            <h1 className="text-2xl font-black text-charcoal mb-2">Restricted Access</h1>
+            <p className="text-sm text-secondary-text mb-4">
+              You are signed in as <strong className="text-charcoal font-mono">{user.email}</strong>. This account is not authorized to access administrative controls.
+            </p>
+
+            <div className="p-4 bg-red-50/60 rounded-2xl border border-red-200 mb-6 text-left">
+              <p className="text-[11px] font-bold text-red-800 uppercase tracking-wider mb-2">
+                Only the following authorized emails can open Admin:
+              </p>
+              <ul className="text-xs font-semibold text-charcoal space-y-1.5">
+                {AUTHORIZED_ADMIN_EMAILS.map(em => (
+                  <li key={em} className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-red-500 shrink-0" />
+                    <span className="font-mono">{em}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-2.5">
+              <button
+                onClick={() => {
+                  logout();
+                  openAuthModal('login');
+                }}
+                className="w-full py-3.5 px-6 rounded-2xl bg-deep-green hover:bg-deep-green-hover text-cream font-bold text-sm shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+              >
+                <LogIn className="w-4 h-4 text-muted-gold" />
+                <span>Switch to Authorized Admin Account</span>
+              </button>
+
+              <Link
+                href="/"
+                className="block w-full py-2.5 text-xs font-bold text-secondary-text hover:text-charcoal transition-colors text-center"
+              >
+                ← Return to Storefront
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // --- AUTHORIZED ADMIN DASHBOARD ---
   return (
     <div className="min-h-screen flex flex-col bg-cream text-charcoal">
       <Navbar />
@@ -359,6 +514,11 @@ export default function AdminPage() {
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-deep-green text-cream border border-muted-gold/40 text-xs font-bold shadow-sm">
+              <ShieldCheck className="w-3.5 h-3.5 text-muted-gold shrink-0" />
+              <span className="hidden sm:inline font-mono">{user?.email}</span>
+              <span className="text-[10px] bg-muted-gold text-deep-green px-1.5 py-0.5 rounded font-black uppercase">Verified Admin</span>
+            </div>
             <button
               onClick={playChime}
               title="Test WebSocket Chime"

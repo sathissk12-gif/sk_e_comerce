@@ -1,5 +1,6 @@
-import { Controller, Get, Post, Delete, Param, Body, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Controller, Get, Post, Delete, Param, Body, UseGuards, BadRequestException, NotFoundException } from '@nestjs/common';
 import { DatabaseStore, Coupon } from '../data/db';
+import { AdminGuard } from '../auth/admin.guard';
 
 @Controller('api/coupons')
 export class CouponsController {
@@ -10,6 +11,7 @@ export class CouponsController {
     return { success: true, coupons: this.db.coupons };
   }
 
+  @UseGuards(AdminGuard)
   @Post()
   create(@Body() body: any) {
     if (!body.code || !body.value) {
@@ -41,6 +43,7 @@ export class CouponsController {
     };
   }
 
+  @UseGuards(AdminGuard)
   @Delete(':code')
   remove(@Param('code') code: string) {
     const cleanCode = code.trim().toUpperCase();
