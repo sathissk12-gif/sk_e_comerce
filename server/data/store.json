@@ -891,6 +891,15 @@
       "avatarUrl": "https://images.unsplash.com/photo-1494790108377-be9c29b29330",
       "role": "CUSTOMER",
       "createdAt": "2026-09-14T15:18:27.136Z"
+    },
+    {
+      "id": "user-g-2391562d-e60b-44c6-9f7d-f3eb57c50e67",
+      "name": "Homely Google Shopper",
+      "email": "user.1789399162620@gmail.com",
+      "googleId": "google-1789399162639",
+      "avatarUrl": "https://lh3.googleusercontent.com/a/default-user",
+      "role": "CUSTOMER",
+      "createdAt": "2026-09-14T15:19:22.640Z"
     }
   ]
 }
