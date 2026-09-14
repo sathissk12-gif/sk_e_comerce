@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+*/node_modules/
+
+# Next.js Build Output
+.next/
+client/.next/
+out/
+client/out/
+
+# NestJS Build Output
+dist/
+server/dist/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# OS files
+.DS_Store
+Thumbs.db
