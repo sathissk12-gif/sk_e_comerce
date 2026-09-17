@@ -31,7 +31,8 @@ import {
   LogIn,
   LogOut,
   Upload,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Layers
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
@@ -59,18 +60,32 @@ export default function AdminPage() {
   // New Product Modal
   const [isAddProductOpen, setIsAddProductOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any | null>(null);
-  const [productForm, setProductForm] = useState({
+  const [productForm, setProductForm] = useState<{
+    name: string;
+    category: string;
+    brand: string;
+    badge: string;
+    description: string;
+    imageUrl: string;
+    mrp: number;
+    offerPrice: number;
+    stockQty: number;
+    colors: string;
+    capacity: string;
+    variants: any[];
+  }>({
     name: '',
     category: 'casseroles',
-    brand: 'Homely',
+    brand: 'Asian Plastowares',
     badge: 'GRAND FESTIVE OFFER',
     description: '',
-    imageUrl: '/products/master_casserole.png',
+    imageUrl: '/products/cat_master_casserole.png',
     mrp: 1800,
     offerPrice: 1250,
     stockQty: 30,
     colors: 'Sapphire Blue, Pearl White, Rose Gold',
-    capacity: '1500ml + 3500ml'
+    capacity: '1500ml + 3500ml',
+    variants: []
   });
 
   // New Coupon Modal
@@ -281,6 +296,99 @@ export default function AdminPage() {
     }
   };
 
+  const [uploadingVariantIndex, setUploadingVariantIndex] = useState<number | null>(null);
+
+  const handleVariantImageUpload = async (variantIdx: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingVariantIndex(variantIdx);
+    setUploadError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${getApiBaseUrl()}/api/products/upload`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+
+      const data = await res.json();
+      if (res.ok && data.imageUrl) {
+        setProductForm(prev => {
+          const updatedVars = [...prev.variants];
+          if (updatedVars[variantIdx]) {
+            updatedVars[variantIdx] = {
+              ...updatedVars[variantIdx],
+              imageUrl: data.imageUrl
+            };
+          }
+          return { ...prev, variants: updatedVars };
+        });
+      } else {
+        setUploadError(data.message || 'Variant image upload failed');
+      }
+    } catch (err: any) {
+      console.error('Variant image upload error:', err);
+      setUploadError(err.message || 'Variant upload error');
+    } finally {
+      setUploadingVariantIndex(null);
+    }
+  };
+
+  const handleUpdateVariant = (idx: number, field: string, value: any) => {
+    setProductForm(prev => {
+      const updated = [...prev.variants];
+      if (updated[idx]) {
+        updated[idx] = { ...updated[idx], [field]: value };
+        if (field === 'mrp' || field === 'offerPrice') {
+          const mrp = Number(field === 'mrp' ? value : updated[idx].mrp || 0);
+          const off = Number(field === 'offerPrice' ? value : updated[idx].offerPrice || 0);
+          if (mrp > 0) {
+            updated[idx].discountPct = Math.max(0, Math.round(((mrp - off) / mrp) * 100));
+          }
+        }
+      }
+      return { ...prev, variants: updated };
+    });
+  };
+
+  const handleAddVariant = () => {
+    setProductForm(prev => {
+      const newIdx = prev.variants.length + 1;
+      const newVar = {
+        id: `var-${Date.now()}-${newIdx}`,
+        sku: `SKU-${Date.now().toString().slice(-4)}-${newIdx}`,
+        name: `Variant ${newIdx}`,
+        capacity: '',
+        mrp: prev.mrp || 500,
+        offerPrice: prev.offerPrice || 500,
+        discountPct: 0,
+        stockQty: 25,
+        colors: ['Standard'],
+        imageUrl: '',
+        casePackQty: 24,
+        packingType: 'Box'
+      };
+      return { ...prev, variants: [...prev.variants, newVar] };
+    });
+  };
+
+  const handleRemoveVariant = (idx: number) => {
+    if (productForm.variants.length <= 1) {
+      alert('A product must have at least one variant.');
+      return;
+    }
+    setProductForm(prev => ({
+      ...prev,
+      variants: prev.variants.filter((_, i) => i !== idx)
+    }));
+  };
+
   // Product Actions
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -290,10 +398,21 @@ export default function AdminPage() {
         : `${getApiBaseUrl()}/api/products`;
       const method = editingProduct ? 'PUT' : 'POST';
 
+      // Ensure top-level fields match the primary variant if variants exist
+      const payload = { ...productForm };
+      if (payload.variants && payload.variants.length > 0) {
+        payload.mrp = payload.variants[0].mrp || payload.mrp;
+        payload.offerPrice = payload.variants[0].offerPrice || payload.offerPrice;
+        payload.stockQty = payload.variants[0].stockQty ?? payload.stockQty;
+        if (payload.variants[0].capacity) {
+          payload.capacity = payload.variants[0].capacity;
+        }
+      }
+
       const res = await fetch(url, {
         method,
         headers: authHeaders,
-        body: JSON.stringify(productForm)
+        body: JSON.stringify(payload)
       });
 
       if (res.ok) {
@@ -887,15 +1006,31 @@ export default function AdminPage() {
                   setProductForm({
                     name: '',
                     category: 'casseroles',
-                    brand: 'Homely',
+                    brand: 'Asian Plastowares',
                     badge: 'GRAND FESTIVE OFFER',
                     description: '',
-                    imageUrl: '/products/master_casserole.png',
-                    mrp: 1800,
-                    offerPrice: 1250,
+                    imageUrl: '/products/cat_master_casserole.png',
+                    mrp: 1000,
+                    offerPrice: 1000,
                     stockQty: 30,
-                    colors: 'Sapphire Blue, Pearl White, Rose Gold',
-                    capacity: '1500ml + 3500ml'
+                    colors: 'Sapphire Blue, Pearl White',
+                    capacity: 'Standard',
+                    variants: [
+                      {
+                        id: `var-new-${Date.now()}-1`,
+                        sku: `SKU-${Date.now().toString().slice(-4)}-1`,
+                        name: 'Standard Unit',
+                        capacity: 'Standard',
+                        mrp: 1000,
+                        offerPrice: 1000,
+                        discountPct: 0,
+                        stockQty: 30,
+                        colors: ['Sapphire Blue', 'Pearl White'],
+                        imageUrl: '',
+                        casePackQty: 24,
+                        packingType: 'Box'
+                      }
+                    ]
                   });
                   setIsAddProductOpen(true);
                 }}
@@ -935,9 +1070,16 @@ export default function AdminPage() {
                             </div>
                             <div>
                               <p className="font-bold text-charcoal line-clamp-1">{p.name}</p>
-                              <span className="text-[10px] text-secondary-text font-mono">
-                                SKU: {v.sku}
-                              </span>
+                              <div className="flex items-center gap-1.5 mt-0.5">
+                                <span className="text-[10px] text-secondary-text font-mono">
+                                  SKU: {v.sku}
+                                </span>
+                                {p.variants && p.variants.length > 1 && (
+                                  <span className="px-1.5 py-0.2 rounded bg-deep-green/10 text-deep-green font-bold text-[9px] border border-deep-green/20">
+                                    {p.variants.length} Variants
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         </td>
@@ -987,18 +1129,53 @@ export default function AdminPage() {
                             <button
                               onClick={() => {
                                 setEditingProduct(p);
+                                const mappedVariants = (p.variants && p.variants.length > 0)
+                                  ? p.variants.map((variant: any, idx: number) => ({
+                                      id: variant.id || `var-${p.id}-${idx + 1}`,
+                                      sku: variant.sku || `${p.id}-${idx + 1}`,
+                                      name: variant.name || variant.capacity || `Variant ${idx + 1}`,
+                                      capacity: variant.capacity || '',
+                                      mrp: Number(variant.mrp ?? v.mrp ?? 0),
+                                      offerPrice: Number(variant.offerPrice ?? v.offerPrice ?? 0),
+                                      discountPct: Number(variant.discountPct ?? 0),
+                                      stockQty: Number(variant.stockQty ?? v.stockQty ?? 0),
+                                      colors: Array.isArray(variant.colors)
+                                        ? variant.colors
+                                        : (typeof variant.colors === 'string' ? variant.colors.split(',').map((c: string) => c.trim()).filter(Boolean) : ['Standard']),
+                                      imageUrl: variant.imageUrl || '',
+                                      casePackQty: Number(variant.casePackQty || 24),
+                                      packingType: variant.packingType || 'Box'
+                                    }))
+                                  : [
+                                      {
+                                        id: `var-${p.id}-1`,
+                                        sku: v.sku || `${p.id}-1`,
+                                        name: v.name || v.capacity || 'Standard Unit',
+                                        capacity: v.capacity || '',
+                                        mrp: Number(v.mrp || 0),
+                                        offerPrice: Number(v.offerPrice || 0),
+                                        discountPct: Number(v.discountPct || 0),
+                                        stockQty: Number(v.stockQty || 0),
+                                        colors: v.colors || ['Standard'],
+                                        imageUrl: p.imageUrl || '',
+                                        casePackQty: 24,
+                                        packingType: 'Box'
+                                      }
+                                    ];
+
                                 setProductForm({
                                   name: p.name,
                                   category: p.category,
-                                  brand: p.brand,
-                                  badge: p.badge,
-                                  description: p.description,
+                                  brand: p.brand || 'Asian Plastowares',
+                                  badge: p.badge || '',
+                                  description: p.description || '',
                                   imageUrl: p.imageUrl,
                                   mrp: v.mrp,
                                   offerPrice: v.offerPrice,
                                   stockQty: v.stockQty,
                                   colors: (v.colors || []).join(', '),
-                                  capacity: v.capacity || ''
+                                  capacity: v.capacity || '',
+                                  variants: mappedVariants
                                 });
                                 setIsAddProductOpen(true);
                               }}
@@ -1079,11 +1256,14 @@ export default function AdminPage() {
       {/* Add / Edit Product Modal */}
       {isAddProductOpen && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-charcoal/70 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="relative w-full max-w-lg bg-card rounded-2xl shadow-2xl border border-warm-beige overflow-hidden">
+          <div className="relative w-full max-w-3xl bg-card rounded-2xl shadow-2xl border border-warm-beige overflow-hidden my-8">
             <div className="p-4 bg-deep-green text-cream flex items-center justify-between border-b border-deep-green-light">
-              <h3 className="font-bold text-sm text-cream">
-                {editingProduct ? 'Edit Product' : 'Add New Product to Catalog'}
-              </h3>
+              <div className="flex items-center gap-2">
+                <Layers className="w-5 h-5 text-muted-gold" />
+                <h3 className="font-bold text-sm text-cream">
+                  {editingProduct ? 'Edit Product & Variants' : 'Add New Product & Variants to Catalog'}
+                </h3>
+              </div>
               <button
                 onClick={() => setIsAddProductOpen(false)}
                 className="p-1 rounded-lg text-sage hover:text-cream"
@@ -1092,170 +1272,375 @@ export default function AdminPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveProduct} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
-              <div>
-                <label className="font-semibold text-secondary-text block mb-1">Product Title</label>
-                <input
-                  type="text"
-                  required
-                  value={productForm.name}
-                  onChange={e => setProductForm({ ...productForm, name: e.target.value })}
-                  placeholder="e.g. Royal Insulated Casserole Set"
-                  className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal focus:outline-none focus:border-deep-green focus:bg-card"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="font-semibold text-secondary-text block mb-1">Category</label>
-                  <select
-                    value={productForm.category}
-                    onChange={e => setProductForm({ ...productForm, category: e.target.value as any })}
-                    className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal font-bold focus:outline-none focus:border-deep-green"
-                  >
-                    <option value="casseroles">Insulated Casseroles</option>
-                    <option value="combos">Combos & Gift Sets</option>
-                    <option value="tiffins">Lunch Boxes & Tiffins</option>
-                    <option value="bottles">Bottles & Flasks</option>
-                    <option value="coolers">Thermo Wagon Coolers</option>
-                    <option value="containers">Airtight Storage Jars</option>
-                    <option value="organizers">Storage Boxes & Organizers</option>
-                    <option value="household">Household & Pedal Bins</option>
-                  </select>
+            <form onSubmit={handleSaveProduct} className="p-5 sm:p-6 space-y-6 max-h-[82vh] overflow-y-auto text-xs">
+              {/* SECTION 1: Product Master Info */}
+              <div className="space-y-3.5 pb-5 border-b border-warm-beige">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-black text-xs text-deep-green uppercase tracking-wider flex items-center gap-1.5">
+                    <Package className="w-4 h-4 text-muted-gold" />
+                    <span>1. Master Product Information</span>
+                  </h4>
+                  <span className="text-[10px] text-secondary-text">General details visible in catalog</span>
                 </div>
+
                 <div>
-                  <label className="font-semibold text-secondary-text block mb-1">Badge</label>
+                  <label className="font-semibold text-secondary-text block mb-1">Product Title</label>
                   <input
                     type="text"
-                    value={productForm.badge}
-                    onChange={e => setProductForm({ ...productForm, badge: e.target.value })}
-                    className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="font-semibold text-secondary-text block mb-1">MRP (₹)</label>
-                  <input
-                    type="number"
                     required
-                    value={productForm.mrp}
-                    onChange={e => setProductForm({ ...productForm, mrp: Number(e.target.value) })}
-                    className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal font-mono"
+                    value={productForm.name}
+                    onChange={e => setProductForm({ ...productForm, name: e.target.value })}
+                    placeholder="e.g. Royal Insulated Casserole Set"
+                    className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal font-bold text-sm focus:outline-none focus:border-deep-green focus:bg-card"
                   />
                 </div>
-                <div>
-                  <label className="font-semibold text-secondary-text block mb-1">Offer Price (₹)</label>
-                  <input
-                    type="number"
-                    required
-                    value={productForm.offerPrice}
-                    onChange={e => setProductForm({ ...productForm, offerPrice: Number(e.target.value) })}
-                    className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-deep-green font-mono font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="font-semibold text-secondary-text block mb-1">Stock Qty</label>
-                  <input
-                    type="number"
-                    required
-                    value={productForm.stockQty}
-                    onChange={e => setProductForm({ ...productForm, stockQty: Number(e.target.value) })}
-                    className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal font-mono"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="font-semibold text-secondary-text block mb-1">Available Colors (comma separated)</label>
-                <input
-                  type="text"
-                  value={productForm.colors}
-                  onChange={e => setProductForm({ ...productForm, colors: e.target.value })}
-                  placeholder="Sapphire Blue, Pearl White, Rose Gold"
-                  className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal"
-                />
-              </div>
-
-              {/* Product Image & Server Upload */}
-              <div className="bg-cream/70 p-3.5 rounded-xl border border-warm-beige space-y-2.5">
-                <label className="font-bold text-secondary-text block text-[11px] uppercase tracking-wider">
-                  Product Image (Server Upload)
-                </label>
-                <div className="flex items-center gap-3">
-                  <div className="w-16 h-16 rounded-xl border border-warm-beige bg-card overflow-hidden flex items-center justify-center relative shrink-0 shadow-sm">
-                    {productForm.imageUrl ? (
-                      <img
-                        src={productForm.imageUrl}
-                        alt="Product preview"
-                        className="w-full h-full object-contain p-1"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/products/master_casserole.png';
-                        }}
-                      />
-                    ) : (
-                      <ImageIcon className="w-6 h-6 text-muted-gold" />
-                    )}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="font-semibold text-secondary-text block mb-1">Category</label>
+                    <select
+                      value={productForm.category}
+                      onChange={e => setProductForm({ ...productForm, category: e.target.value as any })}
+                      className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal font-bold focus:outline-none focus:border-deep-green"
+                    >
+                      <option value="casseroles">Insulated Casseroles</option>
+                      <option value="combos">Combos & Gift Sets</option>
+                      <option value="tiffins">Lunch Boxes & Tiffins</option>
+                      <option value="bottles">Bottles & Flasks</option>
+                      <option value="coolers">Thermo Wagon Coolers</option>
+                      <option value="containers">Airtight Storage Jars</option>
+                      <option value="organizers">Storage Boxes & Organizers</option>
+                      <option value="household">Household & Pedal Bins</option>
+                    </select>
                   </div>
+                  <div>
+                    <label className="font-semibold text-secondary-text block mb-1">Brand</label>
+                    <input
+                      type="text"
+                      value={productForm.brand}
+                      onChange={e => setProductForm({ ...productForm, brand: e.target.value })}
+                      placeholder="Asian Plastowares"
+                      className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal"
+                    />
+                  </div>
+                  <div>
+                    <label className="font-semibold text-secondary-text block mb-1">Badge</label>
+                    <input
+                      type="text"
+                      value={productForm.badge}
+                      onChange={e => setProductForm({ ...productForm, badge: e.target.value })}
+                      placeholder="FESTIVE SPECIAL"
+                      className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal"
+                    />
+                  </div>
+                </div>
 
-                  <div className="flex-1 space-y-1.5">
-                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-deep-green text-cream rounded-lg text-xs font-semibold cursor-pointer hover:bg-deep-green-hover transition-colors shadow-sm">
-                      <Upload className="w-3.5 h-3.5 text-muted-gold" />
-                      <span>{isUploadingImage ? 'Uploading to Server...' : 'Upload Image to Server'}</span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={isUploadingImage}
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
+                {/* Master Product Image & Server Upload */}
+                <div className="bg-cream/70 p-3.5 rounded-xl border border-warm-beige space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <label className="font-bold text-secondary-text block text-[11px] uppercase tracking-wider">
+                      Master / Fallback Product Image
                     </label>
-                    <p className="text-[10px] text-secondary-text">
-                      Directly uploads file to NestJS backend (<code className="bg-warm-beige px-1 rounded">server/public/products</code>).
-                    </p>
-                    {uploadError && (
-                      <p className="text-[10px] text-rose-600 font-bold">{uploadError}</p>
-                    )}
+                    <span className="text-[10px] text-secondary-text">Default photo for all variants</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 rounded-xl border border-warm-beige bg-card overflow-hidden flex items-center justify-center relative shrink-0 shadow-sm">
+                      {productForm.imageUrl ? (
+                        <img
+                          src={productForm.imageUrl}
+                          alt="Product preview"
+                          className="w-full h-full object-contain p-1"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = '/products/master_casserole.png';
+                          }}
+                        />
+                      ) : (
+                        <ImageIcon className="w-6 h-6 text-muted-gold" />
+                      )}
+                    </div>
+
+                    <div className="flex-1 space-y-1.5">
+                      <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-deep-green text-cream rounded-lg text-xs font-semibold cursor-pointer hover:bg-deep-green-hover transition-colors shadow-sm">
+                        <Upload className="w-3.5 h-3.5 text-muted-gold" />
+                        <span>{isUploadingImage ? 'Uploading Master...' : 'Upload Master Image'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={isUploadingImage}
+                          onChange={handleImageUpload}
+                          className="hidden"
+                        />
+                      </label>
+                      <p className="text-[10px] text-secondary-text">
+                        Directly saved to <code className="bg-warm-beige px-1 rounded">server/public/products</code>.
+                      </p>
+                      {uploadError && (
+                        <p className="text-[10px] text-rose-600 font-bold">{uploadError}</p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] text-secondary-text block mb-0.5">Master Image Path / URL</label>
+                    <input
+                      type="text"
+                      value={productForm.imageUrl}
+                      onChange={e => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                      placeholder="/products/cat_master_casserole.png"
+                      className="w-full bg-card border border-warm-beige rounded-lg px-2.5 py-1.5 text-charcoal font-mono text-[11px]"
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-[10px] text-secondary-text block mb-0.5">Image Path / URL</label>
-                  <input
-                    type="text"
-                    value={productForm.imageUrl}
-                    onChange={e => setProductForm({ ...productForm, imageUrl: e.target.value })}
-                    placeholder="/products/cat_master_casserole.png"
-                    className="w-full bg-card border border-warm-beige rounded-lg px-2.5 py-1.5 text-charcoal font-mono text-[11px]"
+                  <label className="font-semibold text-secondary-text block mb-1">Product Description</label>
+                  <textarea
+                    rows={2}
+                    value={productForm.description}
+                    onChange={e => setProductForm({ ...productForm, description: e.target.value })}
+                    className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal"
+                    placeholder="Short description for product card..."
                   />
                 </div>
               </div>
 
-              <div>
-                <label className="font-semibold text-secondary-text block mb-1">Product Description</label>
-                <textarea
-                  rows={2}
-                  value={productForm.description}
-                  onChange={e => setProductForm({ ...productForm, description: e.target.value })}
-                  className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal"
-                  placeholder="Short description for product card..."
-                />
+              {/* SECTION 2: Product Variants & Individual Photos */}
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-warm-beige">
+                  <div>
+                    <h4 className="font-black text-xs text-deep-green uppercase tracking-wider flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-muted-gold" />
+                      <span>2. Product Variants & Individual Images ({productForm.variants?.length || 0})</span>
+                    </h4>
+                    <p className="text-[11px] text-secondary-text">
+                      Each size/variant can have its own custom photo, price, and stock.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddVariant}
+                    className="px-3 py-1.5 rounded-lg bg-deep-green hover:bg-deep-green-hover text-cream font-bold text-xs flex items-center gap-1.5 shadow-sm self-start sm:self-auto"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-muted-gold" />
+                    <span>Add Variant</span>
+                  </button>
+                </div>
+
+                <div className="space-y-4">
+                  {(productForm.variants || []).map((v: any, idx: number) => {
+                    const isUploadingThis = uploadingVariantIndex === idx;
+                    const displayImage = v.imageUrl || productForm.imageUrl || '/products/master_casserole.png';
+
+                    return (
+                      <div
+                        key={v.id || idx}
+                        className="p-4 rounded-xl bg-card border border-warm-beige shadow-sm space-y-3.5 relative hover:border-sage transition-all"
+                      >
+                        {/* Variant Card Top Bar */}
+                        <div className="flex items-center justify-between pb-2.5 border-b border-warm-beige">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="w-6 h-6 rounded-full bg-deep-green text-cream font-black text-[11px] flex items-center justify-center">
+                              {idx + 1}
+                            </span>
+                            <span className="font-black text-charcoal text-xs">
+                              {v.name || v.capacity || `Variant ${idx + 1}`}
+                            </span>
+                            {v.sku && (
+                              <span className="text-[10px] text-secondary-text font-mono bg-warm-beige/50 px-1.5 py-0.5 rounded">
+                                SKU: {v.sku}
+                              </span>
+                            )}
+                            {v.discountPct > 0 && (
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted-gold/15 text-deep-green font-black border border-muted-gold/30">
+                                {v.discountPct}% OFF
+                              </span>
+                            )}
+                          </div>
+
+                          {productForm.variants.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveVariant(idx)}
+                              className="text-rose-500 hover:text-rose-700 p-1.5 rounded-lg hover:bg-rose-50 transition-colors flex items-center gap-1 text-[11px] font-semibold"
+                              title="Delete Variant"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span className="hidden sm:inline">Remove</span>
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Variant Body: Image Column (left) + Specs Column (right) */}
+                        <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-start">
+                          {/* Left: Per-Variant Image Upload Box */}
+                          <div className="md:col-span-5 bg-cream/70 p-3 rounded-xl border border-warm-beige space-y-2">
+                            <div className="flex items-center justify-between">
+                              <label className="font-bold text-secondary-text text-[10px] uppercase tracking-wider">
+                                Variant Image
+                              </label>
+                              <span
+                                className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                                  v.imageUrl
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : 'bg-warm-beige text-secondary-text'
+                                }`}
+                              >
+                                {v.imageUrl ? 'Custom Variant Photo' : 'Using Master Photo'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <div className="w-16 h-16 rounded-xl border border-warm-beige bg-card overflow-hidden flex items-center justify-center relative shrink-0 shadow-sm">
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={displayImage}
+                                  alt={v.name || 'Variant preview'}
+                                  className="w-full h-full object-contain p-1"
+                                  onError={(e) => {
+                                    (e.target as HTMLImageElement).src = '/products/master_casserole.png';
+                                  }}
+                                />
+                              </div>
+
+                              <div className="flex-1 space-y-1.5">
+                                <label className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-deep-green text-cream rounded-lg text-[11px] font-bold cursor-pointer hover:bg-deep-green-hover transition-colors shadow-sm">
+                                  <Upload className="w-3 h-3 text-muted-gold" />
+                                  <span>{isUploadingThis ? 'Uploading...' : 'Upload Image'}</span>
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    disabled={isUploadingThis}
+                                    onChange={(e) => handleVariantImageUpload(idx, e)}
+                                    className="hidden"
+                                  />
+                                </label>
+                                {v.imageUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUpdateVariant(idx, 'imageUrl', '')}
+                                    className="block text-[10px] text-rose-600 hover:underline font-semibold"
+                                  >
+                                    Reset to Master Image
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+
+                            <div>
+                              <input
+                                type="text"
+                                value={v.imageUrl || ''}
+                                onChange={(e) => handleUpdateVariant(idx, 'imageUrl', e.target.value)}
+                                placeholder="Image URL /products/..."
+                                className="w-full bg-card border border-warm-beige rounded-lg px-2.5 py-1 text-charcoal font-mono text-[10px]"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Right: Variant Specs & Pricing */}
+                          <div className="md:col-span-7 space-y-2.5">
+                            <div className="grid grid-cols-2 gap-2.5">
+                              <div>
+                                <label className="font-semibold text-secondary-text block mb-1 text-[11px]">Variant Title / Name</label>
+                                <input
+                                  type="text"
+                                  required
+                                  value={v.name || ''}
+                                  onChange={(e) => handleUpdateVariant(idx, 'name', e.target.value)}
+                                  placeholder="e.g. 1500 ml"
+                                  className="w-full bg-cream border border-warm-beige rounded-lg px-2.5 py-1.5 text-charcoal font-bold text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="font-semibold text-secondary-text block mb-1 text-[11px]">Capacity / Size Spec</label>
+                                <input
+                                  type="text"
+                                  value={v.capacity || ''}
+                                  onChange={(e) => handleUpdateVariant(idx, 'capacity', e.target.value)}
+                                  placeholder="e.g. 1500 ml"
+                                  className="w-full bg-cream border border-warm-beige rounded-lg px-2.5 py-1.5 text-charcoal text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-3 gap-2">
+                              <div>
+                                <label className="font-semibold text-secondary-text block mb-1 text-[11px]">MRP (₹)</label>
+                                <input
+                                  type="number"
+                                  required
+                                  value={v.mrp || 0}
+                                  onChange={(e) => handleUpdateVariant(idx, 'mrp', Number(e.target.value))}
+                                  className="w-full bg-cream border border-warm-beige rounded-lg px-2.5 py-1.5 text-charcoal font-mono text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="font-semibold text-secondary-text block mb-1 text-[11px]">Offer Price (₹)</label>
+                                <input
+                                  type="number"
+                                  required
+                                  value={v.offerPrice || 0}
+                                  onChange={(e) => handleUpdateVariant(idx, 'offerPrice', Number(e.target.value))}
+                                  className="w-full bg-cream border border-warm-beige rounded-lg px-2.5 py-1.5 text-deep-green font-mono font-bold text-xs"
+                                />
+                              </div>
+                              <div>
+                                <label className="font-semibold text-secondary-text block mb-1 text-[11px]">Stock Qty</label>
+                                <input
+                                  type="number"
+                                  required
+                                  value={v.stockQty ?? 0}
+                                  onChange={(e) => handleUpdateVariant(idx, 'stockQty', Number(e.target.value))}
+                                  className="w-full bg-cream border border-warm-beige rounded-lg px-2.5 py-1.5 text-charcoal font-mono text-xs"
+                                />
+                              </div>
+                            </div>
+
+                            <div>
+                              <label className="font-semibold text-secondary-text block mb-1 text-[11px]">Colors (comma separated)</label>
+                              <input
+                                type="text"
+                                value={Array.isArray(v.colors) ? v.colors.join(', ') : (v.colors || '')}
+                                onChange={(e) => {
+                                  const cols = e.target.value.split(',').map((c: string) => c.trim()).filter(Boolean);
+                                  handleUpdateVariant(idx, 'colors', cols);
+                                }}
+                                placeholder="Sapphire Blue, Pearl White, Rose Gold"
+                                className="w-full bg-cream border border-warm-beige rounded-lg px-2.5 py-1.5 text-charcoal text-xs"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddVariant}
+                  className="w-full py-3 px-4 rounded-xl border-2 border-dashed border-deep-green/30 hover:border-deep-green hover:bg-deep-green/5 text-deep-green font-bold text-xs flex items-center justify-center gap-2 transition-all active:scale-[0.99]"
+                >
+                  <Plus className="w-4 h-4 text-muted-gold" />
+                  <span>Add Another Size / Capacity Variant</span>
+                </button>
               </div>
 
-              <div className="pt-3 border-t border-warm-beige flex items-center justify-end gap-2">
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-warm-beige flex items-center justify-end gap-2.5">
                 <button
                   type="button"
                   onClick={() => setIsAddProductOpen(false)}
-                  className="px-4 py-2 rounded-xl bg-warm-beige text-charcoal font-bold"
+                  className="px-4 py-2.5 rounded-xl bg-warm-beige hover:bg-warm-beige-dark text-charcoal font-bold transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-deep-green hover:bg-deep-green-hover text-cream font-bold shadow-md shadow-deep-green/20"
+                  className="px-6 py-2.5 rounded-xl bg-deep-green hover:bg-deep-green-hover text-cream font-bold text-xs shadow-md shadow-deep-green/20 transition-all flex items-center gap-1.5"
                 >
-                  Save Product
+                  <Check className="w-4 h-4 text-muted-gold" />
+                  <span>Save Product & All Variants</span>
                 </button>
               </div>
             </form>

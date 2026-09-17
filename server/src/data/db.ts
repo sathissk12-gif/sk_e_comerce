@@ -7,6 +7,7 @@ export interface ProductVariant {
   name: string;
   capacity?: string;
   colors: string[];
+  imageUrl?: string;
   mrp: number;
   offerPrice: number;
   discountPct: number;

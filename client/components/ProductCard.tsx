@@ -10,6 +10,7 @@ export interface ProductVariant {
   name: string;
   capacity?: string;
   colors: string[];
+  imageUrl?: string;
   mrp: number;
   offerPrice: number;
   discountPct: number;
@@ -62,6 +63,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
   };
 
   const savings = currentVariant.mrp - currentVariant.offerPrice;
+  const activeImage = currentVariant.imageUrl || product.imageUrl;
 
   return (
     <div className="group relative flex flex-col bg-card rounded-2xl overflow-hidden border border-warm-beige hover:border-muted-gold shadow-sm hover:shadow-xl transition-all duration-300">
@@ -90,8 +92,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
       <div className="relative w-full aspect-[4/3] bg-gradient-to-b from-cream to-card p-4 overflow-hidden flex items-center justify-center border-b border-warm-beige">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
-          src={product.imageUrl}
-          alt={product.name}
+          src={activeImage}
+          alt={`${product.name} - ${currentVariant.name}`}
           className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-sm"
           loading="lazy"
           onError={(e) => {
@@ -99,11 +101,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
             if (!target.dataset.retried) {
               target.dataset.retried = '1';
               // Bust any stale 404 cache in browser
-              target.src = `${product.imageUrl}?v=${Date.now()}`;
+              target.src = `${activeImage}?v=${Date.now()}`;
             } else if (target.dataset.retried === '1') {
               target.dataset.retried = '2';
               // Fallback to direct backend API path if static route is proxied separately
-              target.src = `${getApiBaseUrl()}${product.imageUrl}`;
+              target.src = `${getApiBaseUrl()}${activeImage}`;
             }
           }}
         />

@@ -155,6 +155,31 @@ export class ProductsController {
       rackLocation: body.rackLocation || 'RACK-HT-MAIN'
     };
 
+    let variants: ProductVariant[] = [];
+    if (Array.isArray(body.variants) && body.variants.length > 0) {
+      variants = body.variants.map((v: any, idx: number) => ({
+        id: v.id || `var-${id}-${idx + 1}`,
+        sku: v.sku || `HT-${slug.slice(0, 8).toUpperCase()}-${Date.now().toString().slice(-4)}-${idx + 1}`,
+        name: v.name || v.capacity || `Variant ${idx + 1}`,
+        capacity: v.capacity || undefined,
+        colors: Array.isArray(v.colors)
+          ? v.colors
+          : typeof v.colors === 'string' && v.colors.trim()
+          ? v.colors.split(',').map((c: string) => c.trim())
+          : ['Classic Blue', 'Pearl White', 'Matte Grey'],
+        mrp: Number(v.mrp) || Number(body.mrp),
+        offerPrice: Number(v.offerPrice) || Number(body.offerPrice),
+        discountPct: Number(v.discountPct) || (Number(v.mrp) ? Math.max(0, Math.round(((Number(v.mrp) - Number(v.offerPrice)) / Number(v.mrp)) * 100)) : 0),
+        stockQty: Number(v.stockQty) || 25,
+        rackLocation: v.rackLocation || body.rackLocation || 'RACK-HT-MAIN',
+        imageUrl: v.imageUrl || '',
+        casePackQty: Number(v.casePackQty || 24),
+        packingType: v.packingType || 'Box'
+      }));
+    } else {
+      variants = [variant];
+    }
+
     const newProduct: Product = {
       id,
       slug,
@@ -166,7 +191,7 @@ export class ProductsController {
       imageUrl: body.imageUrl || '/products/master_casserole.png',
       isCombo: Boolean(body.isCombo),
       comboIncludes: body.comboIncludes || undefined,
-      variants: [variant]
+      variants
     };
 
     this.db.products.unshift(newProduct);
@@ -195,7 +220,33 @@ export class ProductsController {
     if (body.badge) prod.badge = body.badge;
     if (body.imageUrl) prod.imageUrl = body.imageUrl;
 
-    if (body.mrp || body.offerPrice || body.stockQty !== undefined || body.rackLocation || body.colors) {
+    if (Array.isArray(body.variants) && body.variants.length > 0) {
+      prod.variants = body.variants.map((v: any, i: number) => {
+        const existing: any = (prod.variants && prod.variants.find((ev: any) => ev.id === v.id)) || (prod.variants && prod.variants[i]) || {};
+        const mrp = Number(v.mrp || existing.mrp || 0);
+        const offerPrice = Number(v.offerPrice || existing.offerPrice || mrp);
+        const discountPct = mrp > 0 ? Math.round(((mrp - offerPrice) / mrp) * 100) : 0;
+        return {
+          id: v.id || existing.id || `var-${prod.id}-${i + 1}`,
+          sku: v.sku || existing.sku || `SKU-${prod.slug.toUpperCase()}-${i + 1}`,
+          name: v.name || existing.name || 'Standard',
+          capacity: v.capacity !== undefined ? v.capacity : existing.capacity,
+          colors: Array.isArray(v.colors)
+            ? v.colors
+            : typeof v.colors === 'string'
+            ? v.colors.split(',').map((c: string) => c.trim())
+            : (existing.colors || ['Standard']),
+          imageUrl: v.imageUrl !== undefined ? v.imageUrl : existing.imageUrl,
+          mrp,
+          offerPrice,
+          discountPct: discountPct > 0 ? discountPct : 0,
+          casePackQty: v.casePackQty !== undefined ? Number(v.casePackQty) : existing.casePackQty,
+          packingType: v.packingType || existing.packingType,
+          stockQty: v.stockQty !== undefined ? Number(v.stockQty) : (existing.stockQty ?? 25),
+          rackLocation: v.rackLocation || existing.rackLocation || 'RACK-MAIN'
+        };
+      });
+    } else if (body.mrp || body.offerPrice || body.stockQty !== undefined || body.rackLocation || body.colors) {
       if (prod.variants && prod.variants.length > 0) {
         const v = prod.variants[0];
         if (body.mrp) v.mrp = Number(body.mrp);
@@ -217,6 +268,47 @@ export class ProductsController {
 
     this.db.save();
     return { success: true, message: 'Product updated successfully', product: prod };
+  }
+
+  @UseGuards(AdminGuard)
+  @Patch(':id/variants/:variantId')
+  updateVariant(
+    @Param('id') id: string,
+    @Param('variantId') variantId: string,
+    @Body() body: any
+  ) {
+    const prod = this.db.products.find(p => p.id === id);
+    if (!prod || !prod.variants) {
+      throw new NotFoundException(`Product not found: ${id}`);
+    }
+
+    const variant = prod.variants.find(v => v.id === variantId);
+    if (!variant) {
+      throw new NotFoundException(`Variant not found: ${variantId}`);
+    }
+
+    if (body.name) variant.name = body.name;
+    if (body.capacity !== undefined) variant.capacity = body.capacity;
+    if (body.imageUrl !== undefined) variant.imageUrl = body.imageUrl;
+    if (body.mrp !== undefined) variant.mrp = Number(body.mrp);
+    if (body.offerPrice !== undefined) variant.offerPrice = Number(body.offerPrice);
+    if (variant.mrp && variant.offerPrice) {
+      variant.discountPct = Math.round(((variant.mrp - variant.offerPrice) / variant.mrp) * 100);
+    }
+    if (body.stockQty !== undefined) variant.stockQty = Number(body.stockQty);
+    if (body.casePackQty !== undefined) variant.casePackQty = Number(body.casePackQty);
+    if (body.packingType) variant.packingType = body.packingType;
+    if (body.rackLocation) variant.rackLocation = body.rackLocation;
+    if (body.colors) {
+      variant.colors = Array.isArray(body.colors)
+        ? body.colors
+        : typeof body.colors === 'string'
+        ? body.colors.split(',').map((c: string) => c.trim())
+        : variant.colors;
+    }
+
+    this.db.save();
+    return { success: true, message: 'Variant updated successfully', variant, product: prod };
   }
 
   @UseGuards(AdminGuard)

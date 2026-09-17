@@ -112,17 +112,18 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                     <div className="w-20 h-20 shrink-0 bg-cream rounded-lg p-1.5 overflow-hidden flex items-center justify-center border border-warm-beige">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
-                        src={item.product.imageUrl}
+                        src={item.variant.imageUrl || item.product.imageUrl}
                         alt={item.product.name}
                         className="max-h-full max-w-full object-contain"
                         onError={(e) => {
                           const target = e.currentTarget;
+                          const fallbackImg = item.variant.imageUrl || item.product.imageUrl;
                           if (!target.dataset.retried) {
                             target.dataset.retried = '1';
-                            target.src = `${item.product.imageUrl}?v=${Date.now()}`;
+                            target.src = `${fallbackImg}?v=${Date.now()}`;
                           } else if (target.dataset.retried === '1') {
                             target.dataset.retried = '2';
-                            target.src = `${getApiBaseUrl()}${item.product.imageUrl}`;
+                            target.src = `${getApiBaseUrl()}${fallbackImg}`;
                           }
                         }}
                       />
