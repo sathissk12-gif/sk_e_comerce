@@ -50,11 +50,15 @@ export class ProductsController {
     return {
       success: true,
       categories: [
-        { id: 'all', name: 'All Festive Offers', count: this.db.products.length },
+        { id: 'all', name: 'All Products', count: this.db.products.length },
         { id: 'casseroles', name: 'Insulated Casseroles', count: counts['casseroles'] || 0 },
-        { id: 'combos', name: 'Festive Combos & Flasks', count: counts['combos'] || 0 },
-        { id: 'containers', name: 'Airtight Storage Containers', count: counts['containers'] || 0 },
-        { id: 'household', name: 'Bowls, Buckets & Stools', count: counts['household'] || 0 }
+        { id: 'combos', name: 'Combos & Gift Sets', count: counts['combos'] || 0 },
+        { id: 'tiffins', name: 'Lunch Boxes & Tiffins', count: counts['tiffins'] || 0 },
+        { id: 'bottles', name: 'Bottles & Flasks', count: counts['bottles'] || 0 },
+        { id: 'coolers', name: 'Thermo Wagon Coolers', count: counts['coolers'] || 0 },
+        { id: 'containers', name: 'Airtight Storage Jars', count: counts['containers'] || 0 },
+        { id: 'organizers', name: 'Storage Boxes & Organizers', count: counts['organizers'] || 0 },
+        { id: 'household', name: 'Household & Pedal Bins', count: counts['household'] || 0 }
       ]
     };
   }

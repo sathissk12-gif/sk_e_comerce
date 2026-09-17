@@ -60,8 +60,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   const categoryPills = [
     { id: 'all', label: 'All Products', href: '/shop', hasIcon: true },
     { id: 'casseroles', label: 'Casseroles', href: '/shop?category=casseroles' },
-    { id: 'combos', label: 'Combos', href: '/shop?category=combos' },
+    { id: 'combos', label: 'Combos & Sets', href: '/shop?category=combos' },
+    { id: 'tiffins', label: 'Tiffins', href: '/shop?category=tiffins' },
+    { id: 'bottles', label: 'Bottles & Jugs', href: '/shop?category=bottles' },
+    { id: 'coolers', label: 'Ice Coolers', href: '/shop?category=coolers' },
     { id: 'containers', label: 'Containers', href: '/shop?category=containers' },
+    { id: 'organizers', label: 'Organizers', href: '/shop?category=organizers' },
     { id: 'household', label: 'Household', href: '/shop?category=household' },
   ];
 

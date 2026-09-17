@@ -12,6 +12,8 @@ export interface ProductVariant {
   mrp: number;
   offerPrice: number;
   discountPct: number;
+  casePackQty?: number;
+  packingType?: string;
   stockQty: number;
   rackLocation: string;
 }
@@ -182,13 +184,26 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
                 <span className="text-xl font-black text-deep-green">
                   ₹{currentVariant.offerPrice}
                 </span>
-                <span className="text-xs text-secondary-text line-through">
-                  MRP ₹{currentVariant.mrp}
-                </span>
+                {savings > 0 && (
+                  <span className="text-xs text-secondary-text line-through">
+                    MRP ₹{currentVariant.mrp}
+                  </span>
+                )}
               </div>
-              <span className="text-[10px] font-bold text-muted-gold-dark">
-                Save ₹{savings} ({currentVariant.discountPct}% OFF)
-              </span>
+              {savings > 0 ? (
+                <span className="text-[10px] font-bold text-muted-gold-dark">
+                  Save ₹{savings} ({currentVariant.discountPct}% OFF)
+                </span>
+              ) : (
+                <span className="text-[10px] font-bold text-secondary-text">
+                  Catalogue MRP: ₹{currentVariant.mrp}
+                </span>
+              )}
+              {currentVariant.casePackQty && (
+                <div className="text-[9px] font-bold text-deep-green/80 mt-0.5">
+                  📦 Case Pack: {currentVariant.casePackQty} Pcs ({currentVariant.packingType || 'Box'})
+                </div>
+              )}
             </div>
 
             <button

@@ -211,11 +211,15 @@ function ShopContent() {
   };
 
   const categories = [
-    { id: 'all', label: 'All Festive Offers' },
+    { id: 'all', label: 'All Products' },
     { id: 'casseroles', label: 'Insulated Casseroles' },
-    { id: 'combos', label: 'Festive Combos & Flasks' },
-    { id: 'containers', label: 'Airtight Storage' },
-    { id: 'household', label: 'Household Essentials' },
+    { id: 'combos', label: 'Combos & Gift Sets' },
+    { id: 'tiffins', label: 'Lunch Boxes & Tiffins' },
+    { id: 'bottles', label: 'Water Bottles & Jugs' },
+    { id: 'coolers', label: 'Thermo Wagon Coolers' },
+    { id: 'containers', label: 'Airtight Storage Jars' },
+    { id: 'organizers', label: 'Boxes & Organizers' },
+    { id: 'household', label: 'Household & Pedal Bins' },
   ];
 
   return (

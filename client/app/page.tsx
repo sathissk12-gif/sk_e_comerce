@@ -152,33 +152,65 @@ export default function HomePage() {
       id: 'casseroles',
       title: 'Insulated Casseroles',
       desc: 'Double-walled thermal sets with metallic gold finishes keeping food piping hot.',
-      count: '4 Sets',
-      image: '/products/master_casserole.png',
-      badge: 'FLAT 32% OFF'
+      count: '9 Models',
+      image: '/products/cat_master_casserole.png',
+      badge: 'STAINLESS INNER'
     },
     {
       id: 'combos',
-      title: 'Festive Combos & Flasks',
+      title: 'Combos & Gift Sets',
       desc: 'All-in-one celebration bundles with casseroles, vacuum flasks, and carry boxes.',
-      count: '4 Bundles',
-      image: '/products/super_hot_flask.png',
+      count: '5 Bundles',
+      image: '/products/cat_elite_trio.png',
       badge: 'GIFT READY'
     },
     {
+      id: 'tiffins',
+      title: 'Lunch Boxes & Tiffins',
+      desc: 'Insulated executive and kids lunch boxes with leak-proof stainless steel containers.',
+      count: '6 Models',
+      image: '/products/cat_urban_pack.png',
+      badge: 'HOT MEAL'
+    },
+    {
+      id: 'bottles',
+      title: 'Bottles & Flasks',
+      desc: 'Vacuum insulated stainless steel flasks, thumb grip gym bottles, and fridge PET sets.',
+      count: '6 Series',
+      image: '/products/cat_thumb_grip_bottle.png',
+      badge: '24H HOT/COLD'
+    },
+    {
+      id: 'coolers',
+      title: 'Thermo Wagon Coolers',
+      desc: 'Heavy-duty insulated ice cooler chests keeping beverages chilled for 24 hours.',
+      count: '45L & 110L',
+      image: '/products/cat_thermo_wagon_cooler.png',
+      badge: '24H CHILL'
+    },
+    {
       id: 'containers',
-      title: 'Airtight Storage',
-      desc: 'Crystal clear stackable containers designed for kitchen pantry organization.',
-      count: '4 Models',
-      image: '/products/clear_stack_containers.png',
-      badge: 'FOOD GRADE'
+      title: 'Airtight Storage Jars',
+      desc: 'Crystal clear modular stackable containers and grain jars for pantry organization.',
+      count: '3 Series',
+      image: '/products/cat_clear_stack.png',
+      badge: 'AIRTIGHT'
+    },
+    {
+      id: 'organizers',
+      title: 'Boxes & Organizers',
+      desc: 'Heavy duty roller storage trunks with wheels and multi-tier drawer organisers.',
+      count: '16L to 67L',
+      image: '/products/cat_regal_roller.png',
+      badge: 'WITH WHEELS'
     },
     {
       id: 'household',
-      title: 'Household Essentials',
-      desc: 'Heavy-duty bath stools, mixing bowls, and high-tensile utility items.',
-      count: '3 Models',
-      image: '/products/stools_and_bowls.png',
-      badge: 'HEAVY DUTY'
+      title: 'Pedal Bins & Household',
+      desc: 'Hands-free hygiene foot pedal dustbins, anti-skid bathroom stools, and durable buckets.',
+      count: '5 Series',
+      image: '/products/cat_look_beautiful_dustbin.png',
+      badge: 'DURABLE'
     }
   ];
 
