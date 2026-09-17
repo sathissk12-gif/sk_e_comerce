@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { ShoppingCart, Check, Package, Sparkles } from 'lucide-react';
+import { getApiBaseUrl } from '../lib/api';
 
 export interface ProductVariant {
   id: string;
@@ -93,6 +94,18 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }
           alt={product.name}
           className="max-h-full max-w-full object-contain group-hover:scale-105 transition-transform duration-300 drop-shadow-sm"
           loading="lazy"
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (!target.dataset.retried) {
+              target.dataset.retried = '1';
+              // Bust any stale 404 cache in browser
+              target.src = `${product.imageUrl}?v=${Date.now()}`;
+            } else if (target.dataset.retried === '1') {
+              target.dataset.retried = '2';
+              // Fallback to direct backend API path if static route is proxied separately
+              target.src = `${getApiBaseUrl()}${product.imageUrl}`;
+            }
+          }}
         />
       </div>
 

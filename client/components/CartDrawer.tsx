@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { X, Trash2, Tag, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { getApiBaseUrl } from '../lib/api';
 import { Product, ProductVariant } from './ProductCard';
 
 export interface CartItem {
@@ -114,6 +115,16 @@ export const CartDrawer: React.FC<CartDrawerProps> = ({
                         src={item.product.imageUrl}
                         alt={item.product.name}
                         className="max-h-full max-w-full object-contain"
+                        onError={(e) => {
+                          const target = e.currentTarget;
+                          if (!target.dataset.retried) {
+                            target.dataset.retried = '1';
+                            target.src = `${item.product.imageUrl}?v=${Date.now()}`;
+                          } else if (target.dataset.retried === '1') {
+                            target.dataset.retried = '2';
+                            target.src = `${getApiBaseUrl()}${item.product.imageUrl}`;
+                          }
+                        }}
                       />
                     </div>
 
