@@ -29,7 +29,9 @@ import {
   ShieldAlert,
   ShieldCheck,
   LogIn,
-  LogOut
+  LogOut,
+  Upload,
+  Image as ImageIcon
 } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
 
@@ -239,6 +241,43 @@ export default function AdminPage() {
       if (res.ok) fetchData();
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  // Image Upload State
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [uploadError, setUploadError] = useState('');
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploadingImage(true);
+    setUploadError('');
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const headers: Record<string, string> = {};
+      if (token) headers['Authorization'] = `Bearer ${token}`;
+
+      const res = await fetch(`${getApiBaseUrl()}/api/products/upload`, {
+        method: 'POST',
+        headers,
+        body: formData
+      });
+
+      const data = await res.json();
+      if (res.ok && data.imageUrl) {
+        setProductForm(prev => ({ ...prev, imageUrl: data.imageUrl }));
+      } else {
+        setUploadError(data.message || 'Image upload failed');
+      }
+    } catch (err: any) {
+      console.error('Image upload error:', err);
+      setUploadError(err.message || 'Upload error');
+    } finally {
+      setIsUploadingImage(false);
     }
   };
 
@@ -1075,9 +1114,13 @@ export default function AdminPage() {
                     className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal font-bold focus:outline-none focus:border-deep-green"
                   >
                     <option value="casseroles">Insulated Casseroles</option>
-                    <option value="combos">Festive Combos</option>
-                    <option value="containers">Storage Containers</option>
-                    <option value="household">Household Essentials</option>
+                    <option value="combos">Combos & Gift Sets</option>
+                    <option value="tiffins">Lunch Boxes & Tiffins</option>
+                    <option value="bottles">Bottles & Flasks</option>
+                    <option value="coolers">Thermo Wagon Coolers</option>
+                    <option value="containers">Airtight Storage Jars</option>
+                    <option value="organizers">Storage Boxes & Organizers</option>
+                    <option value="household">Household & Pedal Bins</option>
                   </select>
                 </div>
                 <div>
@@ -1133,6 +1176,60 @@ export default function AdminPage() {
                   placeholder="Sapphire Blue, Pearl White, Rose Gold"
                   className="w-full bg-cream border border-warm-beige rounded-xl px-3 py-2 text-charcoal"
                 />
+              </div>
+
+              {/* Product Image & Server Upload */}
+              <div className="bg-cream/70 p-3.5 rounded-xl border border-warm-beige space-y-2.5">
+                <label className="font-bold text-secondary-text block text-[11px] uppercase tracking-wider">
+                  Product Image (Server Upload)
+                </label>
+                <div className="flex items-center gap-3">
+                  <div className="w-16 h-16 rounded-xl border border-warm-beige bg-card overflow-hidden flex items-center justify-center relative shrink-0 shadow-sm">
+                    {productForm.imageUrl ? (
+                      <img
+                        src={productForm.imageUrl}
+                        alt="Product preview"
+                        className="w-full h-full object-contain p-1"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/products/master_casserole.png';
+                        }}
+                      />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-muted-gold" />
+                    )}
+                  </div>
+
+                  <div className="flex-1 space-y-1.5">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-deep-green text-cream rounded-lg text-xs font-semibold cursor-pointer hover:bg-deep-green-hover transition-colors shadow-sm">
+                      <Upload className="w-3.5 h-3.5 text-muted-gold" />
+                      <span>{isUploadingImage ? 'Uploading to Server...' : 'Upload Image to Server'}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={isUploadingImage}
+                        onChange={handleImageUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    <p className="text-[10px] text-secondary-text">
+                      Directly uploads file to NestJS backend (<code className="bg-warm-beige px-1 rounded">server/public/products</code>).
+                    </p>
+                    {uploadError && (
+                      <p className="text-[10px] text-rose-600 font-bold">{uploadError}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[10px] text-secondary-text block mb-0.5">Image Path / URL</label>
+                  <input
+                    type="text"
+                    value={productForm.imageUrl}
+                    onChange={e => setProductForm({ ...productForm, imageUrl: e.target.value })}
+                    placeholder="/products/cat_master_casserole.png"
+                    className="w-full bg-card border border-warm-beige rounded-lg px-2.5 py-1.5 text-charcoal font-mono text-[11px]"
+                  />
+                </div>
               </div>
 
               <div>

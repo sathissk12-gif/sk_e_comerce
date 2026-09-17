@@ -1,4 +1,8 @@
-import { Controller, Get, Post, Put, Delete, Patch, Param, Query, Body, UseGuards, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Patch, Param, Query, Body, UseGuards, NotFoundException, BadRequestException, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as path from 'path';
+import * as fs from 'fs';
 import { DatabaseStore, Product, ProductVariant } from '../data/db';
 import { AdminGuard } from '../auth/admin.guard';
 
@@ -70,6 +74,57 @@ export class ProductsController {
       throw new NotFoundException(`Product not found: ${id}`);
     }
     return { success: true, product: prod };
+  }
+
+  @UseGuards(AdminGuard)
+  @Post('upload')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (req, file, cb) => {
+          const uploadPath = path.resolve(__dirname, '../../public/products');
+          if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true });
+          }
+          cb(null, uploadPath);
+        },
+        filename: (req, file, cb) => {
+          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const ext = path.extname(file.originalname).toLowerCase() || '.png';
+          cb(null, `prod_${uniqueSuffix}${ext}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|webp|gif|svg\+xml)$/)) {
+          return cb(new BadRequestException('Only image files (jpg, jpeg, png, webp, gif, svg) are allowed!'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 10 * 1024 * 1024, // 10MB
+      },
+    }),
+  )
+  uploadImage(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException('No image file provided.');
+    }
+
+    // Also copy to client/public/products if it exists so Next.js frontend has it immediately
+    try {
+      const clientDir = path.resolve(__dirname, '../../../client/public/products');
+      if (fs.existsSync(clientDir)) {
+        fs.copyFileSync(file.path, path.join(clientDir, file.filename));
+      }
+    } catch (e) {
+      console.warn('Could not sync uploaded image to client/public/products:', e);
+    }
+
+    return {
+      success: true,
+      imageUrl: `/products/${file.filename}`,
+      filename: file.filename,
+    };
   }
 
   @UseGuards(AdminGuard)
